@@ -1,0 +1,4 @@
+dataset_id,dataset_name,dataset_type,variables,units,resolution,coverage,time_coverage,row_count,missing_values,notes
+1,argo_float_6901234.nc,VALIDATION,TEMP|PRES|LATITUDE|LONGITUDE|JULD|TEMP_QC|PRES_QC|POSITION_QC,"{""TEMP"": ""degree_Celsius"", ""PRES"": ""decibar"", ""LATITUDE"": ""degree_north"", ""LONGITUDE"": ""degree_east""}",N/A,N/A,N/A,"{'N_PROF': 3, 'N_LEVELS': 15}",0,
+2,argo_float_6901235.nc,VALIDATION,TEMP|PRES|LATITUDE|LONGITUDE|JULD|TEMP_QC|PRES_QC|POSITION_QC,"{""TEMP"": ""degree_Celsius"", ""PRES"": ""decibar"", ""LATITUDE"": ""degree_north"", ""LONGITUDE"": ""degree_east""}",N/A,N/A,N/A,"{'N_PROF': 4, 'N_LEVELS': 15}",0,
+3,argo_float_6901236.nc,VALIDATION,TEMP|PRES|LATITUDE|LONGITUDE|JULD|TEMP_QC|PRES_QC|POSITION_QC,"{""TEMP"": ""degree_Celsius"", ""PRES"": ""decibar"", ""LATITUDE"": ""degree_north"", ""LONGITUDE"": ""degree_east""}",N/A,N/A,N/A,"{'N_PROF': 4, 'N_LEVELS': 15}",15,

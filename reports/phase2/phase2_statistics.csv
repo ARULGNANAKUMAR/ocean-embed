@@ -1,0 +1,10 @@
+variable,mean,std,min,max,coverage_pct,missing_pct
+sst,,,,,0.0,100.0
+sss,,,,,0.0,100.0
+sla,,,,,0.0,100.0
+sla_observation_count,0.0,0.0,0.0,0.0,100.0,0.0
+current_u,,,,,0.0,100.0
+current_v,,,,,0.0,100.0
+wind_u,,,,,0.0,100.0
+wind_v,,,,,0.0,100.0
+thetao,,,,,0.0,100.0

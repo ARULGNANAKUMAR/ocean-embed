@@ -1,0 +1,4 @@
+filename,filepath,extension,folder,file_size_bytes,created_time,dataset_type
+argo_float_6901234.nc,data\raw\argo\argo_float_6901234.nc,.nc,data\raw\argo,14192,2026-09-12T00:47:34+00:00,VALIDATION
+argo_float_6901235.nc,data\raw\argo\argo_float_6901235.nc,.nc,data\raw\argo,13734,2026-09-12T00:47:34+00:00,VALIDATION
+argo_float_6901236.nc,data\raw\argo\argo_float_6901236.nc,.nc,data\raw\argo,13734,2026-09-12T00:47:34+00:00,VALIDATION

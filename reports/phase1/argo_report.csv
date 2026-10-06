@@ -1,0 +1,2 @@
+filepath,num_profiles,float_ids,temp_range,depth_range,region_overlap,date_overlap,status,notes
+data\raw\argo\argo_float_6901234.nc,3,[],"[12.983402252197266, 28.98332977294922]","[0.0, 1000.0]",True,True,PASS,[]

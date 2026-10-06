@@ -1,0 +1,160 @@
+2026-09-12 15:17:56 | INFO     | Config loaded from config.json
+2026-09-12 15:17:56 | DEBUG    | Scanned: argo_float_6901234.nc
+2026-09-12 15:17:56 | DEBUG    | Scanned: argo_float_6901235.nc
+2026-09-12 15:17:56 | DEBUG    | Scanned: argo_float_6901236.nc
+2026-09-12 15:17:56 | INFO     | Dataset scan complete. Found 3 file(s).
+2026-09-12 15:17:56 | INFO     | Dataset inventory saved → reports/phase1\dataset_inventory.csv
+2026-09-12 15:17:56 | DEBUG    | Hash [argo_float_6901234.nc]: 73d2e83db31a...
+2026-09-12 15:17:56 | DEBUG    | Hash [argo_float_6901235.nc]: 36e4e1feeb11...
+2026-09-12 15:17:56 | DEBUG    | Hash [argo_float_6901236.nc]: a950133be90c...
+2026-09-12 15:17:58 | INFO     | NetCDF inspected: argo_float_6901234.nc
+2026-09-12 15:17:58 | INFO     | NetCDF inspected: argo_float_6901235.nc
+2026-09-12 15:17:58 | INFO     | NetCDF inspected: argo_float_6901236.nc
+2026-09-12 15:17:58 | INFO     | Metadata master saved → reports/phase1\metadata_master.csv
+2026-09-12 15:17:58 | INFO     | QC [argo_float_6901234.nc]: PASS
+2026-09-12 15:17:58 | INFO     | QC [argo_float_6901235.nc]: PASS
+2026-09-12 15:17:58 | INFO     | QC [argo_float_6901236.nc]: WARNING
+2026-09-12 15:17:58 | INFO     | QC report saved → reports/phase1\dataset_quality_report.csv
+2026-09-12 15:17:58 | INFO     | Coverage [argo_float_6901234.nc]: spatial=0% temporal=0%
+2026-09-12 15:17:58 | INFO     | Coverage [argo_float_6901235.nc]: spatial=0% temporal=0%
+2026-09-12 15:17:58 | INFO     | Coverage [argo_float_6901236.nc]: spatial=0% temporal=0%
+2026-09-12 15:17:58 | INFO     | Coverage report saved → reports/phase1\dataset_coverage_report.csv
+2026-09-12 15:17:58 | INFO     | Resolution analysis: 0 mismatch(es)
+2026-09-12 15:17:58 | INFO     | Resolution report saved → reports/phase1\resolution_report.csv
+2026-09-12 15:17:58 | INFO     | GLORYS report saved → reports/phase1\glorys_depth_report.csv
+2026-09-12 15:17:59 | INFO     | ARGO validation: PASS — 3 profiles
+2026-09-12 15:17:59 | INFO     | ARGO report saved → reports/phase1\argo_report.csv
+2026-09-12 15:17:59 | INFO     | SQLite database initialized: data/database/ocean_platform.db
+2026-09-12 15:17:59 | INFO     | Phase 1 summary saved → reports/phase1\phase1_summary.json
+2026-09-12 20:11:30 | INFO     | Config loaded from config.json
+2026-09-12 20:11:30 | DEBUG    | Scanned: argo_float_6901234.nc
+2026-09-12 20:11:30 | DEBUG    | Scanned: argo_float_6901235.nc
+2026-09-12 20:11:30 | DEBUG    | Scanned: argo_float_6901236.nc
+2026-09-12 20:11:30 | INFO     | Dataset scan complete. Found 3 file(s).
+2026-09-12 20:11:31 | INFO     | Dataset inventory saved → reports/phase1\dataset_inventory.csv
+2026-09-12 20:11:31 | DEBUG    | Hash [argo_float_6901234.nc]: 73d2e83db31a...
+2026-09-12 20:11:31 | DEBUG    | Hash [argo_float_6901235.nc]: 36e4e1feeb11...
+2026-09-12 20:11:31 | DEBUG    | Hash [argo_float_6901236.nc]: a950133be90c...
+2026-09-12 20:11:36 | INFO     | NetCDF inspected: argo_float_6901234.nc
+2026-09-12 20:11:36 | INFO     | NetCDF inspected: argo_float_6901235.nc
+2026-09-12 20:11:36 | INFO     | NetCDF inspected: argo_float_6901236.nc
+2026-09-12 20:11:36 | INFO     | Metadata master saved → reports/phase1\metadata_master.csv
+2026-09-12 20:11:36 | INFO     | QC [argo_float_6901234.nc]: PASS
+2026-09-12 20:11:36 | INFO     | QC [argo_float_6901235.nc]: PASS
+2026-09-12 20:11:36 | INFO     | QC [argo_float_6901236.nc]: WARNING
+2026-09-12 20:11:36 | INFO     | QC report saved → reports/phase1\dataset_quality_report.csv
+2026-09-12 20:11:36 | INFO     | Coverage [argo_float_6901234.nc]: spatial=0% temporal=0%
+2026-09-12 20:11:36 | INFO     | Coverage [argo_float_6901235.nc]: spatial=0% temporal=0%
+2026-09-12 20:11:36 | INFO     | Coverage [argo_float_6901236.nc]: spatial=0% temporal=0%
+2026-09-12 20:11:36 | INFO     | Coverage report saved → reports/phase1\dataset_coverage_report.csv
+2026-09-12 20:11:36 | INFO     | Resolution analysis: 0 mismatch(es)
+2026-09-12 20:11:36 | INFO     | Resolution report saved → reports/phase1\resolution_report.csv
+2026-09-12 20:11:36 | INFO     | GLORYS report saved → reports/phase1\glorys_depth_report.csv
+2026-09-12 20:11:36 | INFO     | ARGO validation: PASS — 3 profiles
+2026-09-12 20:11:36 | INFO     | ARGO report saved → reports/phase1\argo_report.csv
+2026-09-12 20:11:37 | INFO     | SQLite database initialized: data/database/ocean_platform.db
+2026-09-12 20:11:37 | INFO     | Phase 1 summary saved → reports/phase1\phase1_summary.json
+2026-09-12 20:37:23 | INFO     | Config loaded from config.json
+2026-09-12 20:37:23 | DEBUG    | Scanned: argo_float_6901234.nc
+2026-09-12 20:37:23 | DEBUG    | Scanned: argo_float_6901235.nc
+2026-09-12 20:37:23 | DEBUG    | Scanned: argo_float_6901236.nc
+2026-09-12 20:37:23 | INFO     | Dataset scan complete. Found 3 file(s).
+2026-09-12 20:37:23 | INFO     | Dataset inventory saved → reports/phase1\dataset_inventory.csv
+2026-09-12 20:37:23 | DEBUG    | Hash [argo_float_6901234.nc]: 73d2e83db31a...
+2026-09-12 20:37:23 | DEBUG    | Hash [argo_float_6901235.nc]: 36e4e1feeb11...
+2026-09-12 20:37:23 | DEBUG    | Hash [argo_float_6901236.nc]: a950133be90c...
+2026-09-12 20:37:27 | INFO     | NetCDF inspected: argo_float_6901234.nc
+2026-09-12 20:37:27 | INFO     | NetCDF inspected: argo_float_6901235.nc
+2026-09-12 20:37:28 | INFO     | NetCDF inspected: argo_float_6901236.nc
+2026-09-12 20:37:28 | INFO     | Metadata master saved → reports/phase1\metadata_master.csv
+2026-09-12 20:37:28 | INFO     | QC [argo_float_6901234.nc]: PASS
+2026-09-12 20:37:28 | INFO     | QC [argo_float_6901235.nc]: PASS
+2026-09-12 20:37:28 | INFO     | QC [argo_float_6901236.nc]: WARNING
+2026-09-12 20:37:28 | INFO     | QC report saved → reports/phase1\dataset_quality_report.csv
+2026-09-12 20:37:28 | INFO     | Coverage [argo_float_6901234.nc]: spatial=0% temporal=0%
+2026-09-12 20:37:28 | INFO     | Coverage [argo_float_6901235.nc]: spatial=0% temporal=0%
+2026-09-12 20:37:28 | INFO     | Coverage [argo_float_6901236.nc]: spatial=0% temporal=0%
+2026-09-12 20:37:28 | INFO     | Coverage report saved → reports/phase1\dataset_coverage_report.csv
+2026-09-12 20:37:28 | INFO     | Resolution analysis: 0 mismatch(es)
+2026-09-12 20:37:28 | INFO     | Resolution report saved → reports/phase1\resolution_report.csv
+2026-09-12 20:37:28 | INFO     | GLORYS report saved → reports/phase1\glorys_depth_report.csv
+2026-09-12 20:37:28 | INFO     | ARGO validation: PASS — 3 profiles
+2026-09-12 20:37:28 | INFO     | ARGO report saved → reports/phase1\argo_report.csv
+2026-09-12 20:37:28 | INFO     | SQLite database initialized: data/database/ocean_platform.db
+2026-09-12 20:37:29 | INFO     | Phase 1 summary saved → reports/phase1\phase1_summary.json
+2026-09-12 21:26:22 | INFO     | Config loaded from config.json
+2026-09-12 21:26:22 | DEBUG    | Scanned: argo_float_6901234.nc
+2026-09-12 21:26:22 | DEBUG    | Scanned: argo_float_6901235.nc
+2026-09-12 21:26:22 | DEBUG    | Scanned: argo_float_6901236.nc
+2026-09-12 21:26:22 | INFO     | Dataset scan complete. Found 3 file(s).
+2026-09-12 21:26:22 | INFO     | Dataset inventory saved → reports/phase1\dataset_inventory.csv
+2026-09-12 21:26:22 | DEBUG    | Hash [argo_float_6901234.nc]: 73d2e83db31a...
+2026-09-12 21:26:22 | DEBUG    | Hash [argo_float_6901235.nc]: 36e4e1feeb11...
+2026-09-12 21:26:22 | DEBUG    | Hash [argo_float_6901236.nc]: a950133be90c...
+2026-09-12 21:26:23 | INFO     | NetCDF inspected: argo_float_6901234.nc
+2026-09-12 21:26:23 | INFO     | NetCDF inspected: argo_float_6901235.nc
+2026-09-12 21:26:23 | INFO     | NetCDF inspected: argo_float_6901236.nc
+2026-09-12 21:26:23 | INFO     | Metadata master saved → reports/phase1\metadata_master.csv
+2026-09-12 21:26:23 | INFO     | QC [argo_float_6901234.nc]: PASS
+2026-09-12 21:26:23 | INFO     | QC [argo_float_6901235.nc]: PASS
+2026-09-12 21:26:23 | INFO     | QC [argo_float_6901236.nc]: WARNING
+2026-09-12 21:26:23 | INFO     | QC report saved → reports/phase1\dataset_quality_report.csv
+2026-09-12 21:26:24 | INFO     | Coverage [argo_float_6901234.nc]: spatial=0% temporal=0%
+2026-09-12 21:26:24 | INFO     | Coverage [argo_float_6901235.nc]: spatial=0% temporal=0%
+2026-09-12 21:26:24 | INFO     | Coverage [argo_float_6901236.nc]: spatial=0% temporal=0%
+2026-09-12 21:26:24 | INFO     | Coverage report saved → reports/phase1\dataset_coverage_report.csv
+2026-09-12 21:26:24 | INFO     | Resolution analysis: 0 mismatch(es)
+2026-09-12 21:26:24 | INFO     | Resolution report saved → reports/phase1\resolution_report.csv
+2026-09-12 21:26:24 | INFO     | GLORYS report saved → reports/phase1\glorys_depth_report.csv
+2026-09-12 21:26:24 | INFO     | ARGO validation: PASS — 3 profiles
+2026-09-12 21:26:24 | INFO     | ARGO report saved → reports/phase1\argo_report.csv
+2026-09-12 21:26:24 | INFO     | SQLite database initialized: data/database/ocean_platform.db
+2026-09-12 21:26:24 | INFO     | Phase 1 summary saved → reports/phase1\phase1_summary.json
+2026-09-12 21:26:24 | INFO     | Markdown report saved → reports/phase1\PHASE1_REPORT.md
+2026-09-12 21:26:28 | INFO     | QC plots saved to reports/phase1\plots
+2026-09-12 21:26:28 | INFO     | Phase 1 validation: PASS
+2026-09-12 21:26:28 | DEBUG    | Scanned: argo_float_6901234.nc
+2026-09-12 21:26:28 | DEBUG    | Scanned: argo_float_6901235.nc
+2026-09-12 21:26:28 | DEBUG    | Scanned: argo_float_6901236.nc
+2026-09-12 21:26:28 | INFO     | Dataset scan complete. Found 3 file(s).
+2026-09-12 21:26:28 | DEBUG    | Hash [argo_float_6901234.nc]: 73d2e83db31a...
+2026-09-12 21:26:28 | DEBUG    | Hash [argo_float_6901235.nc]: 36e4e1feeb11...
+2026-09-12 21:26:28 | DEBUG    | Hash [argo_float_6901236.nc]: a950133be90c...
+2026-09-12 21:26:28 | INFO     | SQLite database initialized: data/database/ocean_platform.db
+2026-09-12 21:26:28 | INFO     | Phase 2 SQLite tables created
+2026-09-12 21:26:28 | WARNING  | Surface var 'sst' not available — filled with NaN
+2026-09-12 21:26:28 | WARNING  | Surface var 'sss' not available — filled with NaN
+2026-09-12 21:26:29 | WARNING  | Surface var 'current_u' not available — filled with NaN
+2026-09-12 21:26:29 | WARNING  | Surface var 'current_v' not available — filled with NaN
+2026-09-12 21:26:29 | WARNING  | Surface var 'wind_u' not available — filled with NaN
+2026-09-12 21:26:29 | WARNING  | Surface var 'wind_v' not available — filled with NaN
+2026-09-12 21:26:29 | INFO     | Surface dataset aligned: shape time=30 lat=21 lon=21
+2026-09-12 21:26:29 | INFO     | Surface NetCDF saved → data/final\ocean_surface_inputs.nc
+2026-09-12 21:26:29 | INFO     | Target NetCDF saved → data/final\subsurface_temperature_target.nc
+2026-09-12 21:26:29 | INFO     | Phase 2 summary saved → reports/phase2\phase2_summary.json
+2026-09-12 21:26:29 | INFO     | Phase 2 MD report saved → reports/phase2\PHASE2_REPORT.md
+2026-09-12 21:26:29 | INFO     | Report saved → reports/phase2\phase2_statistics.csv
+2026-09-12 21:26:29 | INFO     | Report saved → reports/phase2\phase2_missing_report.csv
+2026-09-12 21:26:29 | INFO     | Report saved → reports/phase2\phase2_interpolation_report.csv
+2026-09-12 21:26:29 | INFO     | Report saved → reports/phase2\phase2_depth_report.csv
+2026-09-12 21:26:29 | INFO     | Report saved → reports/phase2\phase2_alignment_report.csv
+2026-09-12 21:26:31 | INFO     | Phase 2 plots saved to reports/phase2\plots
+2026-09-12 21:26:31 | INFO     | Phase 1 validation: PASS
+2026-09-12 21:26:31 | INFO     | Phase 2 data loaded — surface (30, 8, 21, 21), target (30, 15, 21, 21)
+2026-09-12 21:26:34 | INFO     | Epoch 1/3 — train=0.0000 val=0.0000
+2026-09-12 21:26:36 | INFO     | Epoch 2/3 — train=0.0000 val=0.0000
+2026-09-12 21:26:38 | INFO     | Epoch 3/3 — train=0.0000 val=0.0000
+2026-09-12 21:26:38 | INFO     | Best model loaded from checkpoint
+2026-09-12 21:26:39 | INFO     | MHW detection: 0 hotspots found
+2026-09-12 21:26:40 | INFO     | Starting ARGO validation pipeline...
+2026-09-12 21:26:40 | INFO     | ARGO validation complete: 135 matched pairs, RMSE=6.1475, Corr=-0.1179
+2026-09-12 21:26:40 | INFO     | Phase 3 SQLite tables created
+2026-09-12 21:26:40 | INFO     | Admin SQLite tables created
+2026-09-12 21:26:40 | INFO     | ARGO validation report saved → reports/phase3\argo_validation.csv
+2026-09-12 21:26:40 | INFO     | Heatwave report saved → reports/phase3\heatwave_report.csv
+2026-09-12 21:26:40 | INFO     | Attention summary saved → reports/phase3\attention_summary.csv
+2026-09-12 21:26:40 | INFO     | Embedding summary saved → reports/phase3\embedding_summary.csv
+2026-09-12 21:26:40 | INFO     | Confidence summary saved → reports/phase3\confidence_summary.csv
+2026-09-12 21:26:40 | INFO     | Uncertainty summary saved → reports/phase3\uncertainty_summary.csv
+2026-09-12 21:26:40 | INFO     | Prediction statistics saved → reports/phase3\prediction_statistics.csv
+2026-09-12 21:26:40 | INFO     | Phase 3 summary saved → reports/phase3\phase3_summary.json

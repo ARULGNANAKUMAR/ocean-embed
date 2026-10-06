@@ -1,0 +1,4 @@
+filename,dataset_type,spatial_overlap,temporal_overlap,overall
+argo_float_6901234.nc,VALIDATION,0.0,0.0,NO_OVERLAP
+argo_float_6901235.nc,VALIDATION,0.0,0.0,NO_OVERLAP
+argo_float_6901236.nc,VALIDATION,0.0,0.0,NO_OVERLAP

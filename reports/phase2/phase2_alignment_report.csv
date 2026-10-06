@@ -1,0 +1,3 @@
+dataset,time,latitude,longitude,depth,variables
+ocean_surface_inputs.nc,30,21,21,-,sst|sss|sla|sla_observation_count|current_u|current_v|wind_u|wind_v
+subsurface_temperature_target.nc,30,21,21,15,thetao

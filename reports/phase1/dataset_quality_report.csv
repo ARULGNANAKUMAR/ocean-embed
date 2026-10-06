@@ -1,0 +1,4 @@
+filename,dataset_type,status,issues
+argo_float_6901234.nc,VALIDATION,PASS,
+argo_float_6901235.nc,VALIDATION,PASS,
+argo_float_6901236.nc,VALIDATION,WARNING,Missing values: 15

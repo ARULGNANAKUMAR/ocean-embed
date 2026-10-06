@@ -1,0 +1,209 @@
+{
+  "status": "VALIDATED",
+  "status_detail": "Validated against 9 ARGO profiles, 135 depth-matched pairs",
+  "profiles_found": 11,
+  "profiles_valid": 9,
+  "profiles_matched": 9,
+  "n_obs": 135,
+  "qc_stats": {
+    "total": 11,
+    "valid": 9,
+    "rejected": 2,
+    "reject_reasons": {
+      "out_of_region": 2
+    },
+    "files_read": 3,
+    "files_failed": 0,
+    "depth_coverage_m": [
+      0,
+      5,
+      10,
+      20,
+      30,
+      50,
+      75,
+      100,
+      125,
+      150,
+      200,
+      300,
+      500,
+      700,
+      1000
+    ],
+    "temporal_coverage": [
+      "2025-01-03 00:00:00",
+      "2025-01-24 00:00:00"
+    ],
+    "spatial_coverage": {
+      "lat_min": 10.199999809265137,
+      "lat_max": 14.5,
+      "lon_min": 81.0,
+      "lon_max": 84.0
+    },
+    "profiles_used_for_validation": 9
+  },
+  "rmse": 2.9617,
+  "mae": 2.6156,
+  "bias": -0.6629,
+  "correlation": 0.9142,
+  "r2": 0.6948,
+  "sde": 2.8866,
+  "depth_metrics": {
+    "0": {
+      "n": 9,
+      "rmse": 3.5593,
+      "mae": 3.4151,
+      "bias": -2.89,
+      "correlation": 0.2101,
+      "r2": -63.0362,
+      "sde": 2.0776
+    },
+    "5": {
+      "n": 9,
+      "rmse": 4.0547,
+      "mae": 3.8739,
+      "bias": -3.6031,
+      "correlation": -0.0317,
+      "r2": -65.1022,
+      "sde": 1.8596
+    },
+    "10": {
+      "n": 9,
+      "rmse": 2.9092,
+      "mae": 2.7272,
+      "bias": -2.7272,
+      "correlation": 0.2112,
+      "r2": -34.39,
+      "sde": 1.0128
+    },
+    "20": {
+      "n": 9,
+      "rmse": 4.4337,
+      "mae": 4.3069,
+      "bias": -4.3069,
+      "correlation": -0.1462,
+      "r2": -83.3344,
+      "sde": 1.0527
+    },
+    "30": {
+      "n": 9,
+      "rmse": 3.3421,
+      "mae": 3.2311,
+      "bias": -3.2311,
+      "correlation": 0.2668,
+      "r2": -58.0862,
+      "sde": 0.854
+    },
+    "50": {
+      "n": 9,
+      "rmse": 2.5562,
+      "mae": 2.3857,
+      "bias": -2.3857,
+      "correlation": 0.2583,
+      "r2": -46.1254,
+      "sde": 0.9182
+    },
+    "75": {
+      "n": 9,
+      "rmse": 2.2579,
+      "mae": 2.1953,
+      "bias": -1.504,
+      "correlation": 0.1579,
+      "r2": -21.0151,
+      "sde": 1.6841
+    },
+    "100": {
+      "n": 9,
+      "rmse": 1.5705,
+      "mae": 1.4958,
+      "bias": -1.4958,
+      "correlation": 0.2883,
+      "r2": -12.4669,
+      "sde": 0.4785
+    },
+    "125": {
+      "n": 9,
+      "rmse": 1.1733,
+      "mae": 1.0789,
+      "bias": -1.0789,
+      "correlation": 0.3574,
+      "r2": -8.3553,
+      "sde": 0.461
+    },
+    "150": {
+      "n": 9,
+      "rmse": 0.7846,
+      "mae": 0.6977,
+      "bias": -0.5057,
+      "correlation": -0.3909,
+      "r2": -2.2878,
+      "sde": 0.5999
+    },
+    "200": {
+      "n": 9,
+      "rmse": 1.954,
+      "mae": 1.7673,
+      "bias": 1.7262,
+      "correlation": 0.029,
+      "r2": -17.257,
+      "sde": 0.9157
+    },
+    "300": {
+      "n": 9,
+      "rmse": 2.2514,
+      "mae": 2.0785,
+      "bias": 2.0785,
+      "correlation": 0.2194,
+      "r2": -24.2003,
+      "sde": 0.8652
+    },
+    "500": {
+      "n": 9,
+      "rmse": 2.9492,
+      "mae": 2.7237,
+      "bias": 2.7237,
+      "correlation": -0.2858,
+      "r2": -45.2801,
+      "sde": 1.131
+    },
+    "700": {
+      "n": 9,
+      "rmse": 3.1082,
+      "mae": 2.9961,
+      "bias": 2.9961,
+      "correlation": -0.1715,
+      "r2": -49.8739,
+      "sde": 0.8272
+    },
+    "1000": {
+      "n": 9,
+      "rmse": 4.4543,
+      "mae": 4.2601,
+      "bias": 4.2601,
+      "correlation": 0.0982,
+      "r2": -126.9876,
+      "sde": 1.3011
+    }
+  },
+  "region_metrics": {
+    "Bay of Bengal": {
+      "n": 135,
+      "rmse": 2.9617,
+      "mae": 2.6156,
+      "bias": -0.6629,
+      "correlation": 0.9142,
+      "r2": 0.6948,
+      "sde": 2.8866
+    },
+    "North Indian Ocean": {
+      "n": 135,
+      "rmse": 2.9617,
+      "mae": 2.6156,
+      "bias": -0.6629,
+      "correlation": 0.9142,
+      "r2": 0.6948,
+      "sde": 2.8866
+    }
+  }
+}

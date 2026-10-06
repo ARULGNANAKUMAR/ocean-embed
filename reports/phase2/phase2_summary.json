@@ -1,0 +1,15 @@
+{
+  "phase": 2,
+  "generated_at": "2026-09-12T15:56:29.308044+00:00",
+  "surface_shape": "{'time': 30, 'latitude': 21, 'longitude': 21}",
+  "target_shape": "{'time': 30, 'depth': 15, 'latitude': 21, 'longitude': 21}",
+  "n_time_steps": 30,
+  "grid_size": "21\u00d721",
+  "n_depths": 15,
+  "variables_processed": {},
+  "unit_conversions": [],
+  "glorys_exact_depths": 0,
+  "glorys_interp_depths": 0,
+  "glorys_missing_depths": 0,
+  "phase2_status": "COMPLETE"
+}

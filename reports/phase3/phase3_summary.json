@@ -1,0 +1,35 @@
+{
+  "phase": 3,
+  "generated_at": "2026-09-12T21:26:40.795931",
+  "training": {
+    "best_val_loss": 0.0,
+    "epochs_run": 3
+  },
+  "prediction": {
+    "n_timesteps": 30,
+    "n_depths": 15,
+    "future_horizons": [
+      7,
+      15,
+      30
+    ]
+  },
+  "heatwaves": {
+    "detected": 0,
+    "severity_counts": {
+      "LOW": 0,
+      "MEDIUM": 0,
+      "HIGH": 0,
+      "EXTREME": 0
+    }
+  },
+  "argo_validation": {
+    "status": "VALIDATED",
+    "rmse": 6.1475,
+    "corr": -0.1179
+  },
+  "uncertainty": {
+    "overall_confidence": 0.6332
+  },
+  "phase3_status": "COMPLETE"
+}
