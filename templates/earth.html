@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ocean Digital Twin — Earth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hologram.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/earth.css') }}">
+</head>
+<body class="earth-page">
+<canvas id="bg-canvas"></canvas>
+
+<nav class="glass-nav" style="position:fixed">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/earth" class="active">Digital Twin</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/heatwave">Heatwave</a>
+    <a href="/voice">Voice AI</a>
+    <a href="/about">About</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)">
+    <span id="live-date"></span> · <span id="live-utc"></span>
+  </div>
+</nav>
+
+<div id="globe-container">
+  <div id="globe-canvas-wrap"></div>
+</div>
+
+<div id="earth-ui-layer">
+  <div id="zoom-breadcrumb" class="glass-card"></div>
+
+  <div id="earth-top-strip" class="glass-card">
+    <div class="strip-item"><span class="strip-label">Region</span><span class="strip-value">North Indian Ocean</span></div>
+    <div class="strip-item"><span class="strip-label">Grid</span><span class="strip-value">0.25°</span></div>
+    <div class="strip-item"><span class="strip-label">Depths</span><span class="strip-value">0–1000m</span></div>
+  </div>
+
+  <div id="cursor-coords">LAT — · LON —</div>
+
+  <div id="layer-toggle-panel" class="glass-card">
+    <div class="toggle-title">Multi-Variable Layers</div>
+    <div class="toggle-list"></div>
+  </div>
+
+  <div id="depth-slider-panel" class="glass-card">
+    <div class="depth-label">0m</div>
+    <input type="range" id="depth-slider" min="0" max="14" value="0" />
+    <div id="opacity-slider-wrap">
+      <span>Opacity</span>
+      <input type="range" id="opacity-slider" min="10" max="100" value="100" />
+    </div>
+  </div>
+
+  <div id="temp-legend" class="glass-card">
+    <div class="legend-title">Temperature</div>
+    <div class="legend-scale"></div>
+    <div class="legend-labels"><span>Cold</span><span>Moderate</span><span>Warm</span><span>Hot</span><span>Extreme</span></div>
+    <div id="legend-current-value" style="margin-top:6px;font-size:0.72rem;color:var(--text-dim2)">—</div>
+  </div>
+
+  <div id="earth-control-dock" class="glass-card">
+    <button class="dock-btn" id="btn-reset-view" title="Reset View">⟲</button>
+    <button class="dock-btn" id="btn-zoom-india" title="Zoom to India">🇮🇳</button>
+    <button class="dock-btn active" id="btn-toggle-rotate" title="Toggle Auto-Rotate">↻</button>
+    <a class="dock-btn" href="/dashboard" title="Dashboard">📊</a>
+    <a class="dock-btn" href="/heatwave" title="Heatwave Center">🔥</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/heatmap.js') }}"></script>
+<script src="{{ url_for('static', filename='js/layers.js') }}"></script>
+<script src="{{ url_for('static', filename='js/globe.js') }}"></script>
+<script src="{{ url_for('static', filename='js/earth.js') }}"></script>
+</body>
+</html>

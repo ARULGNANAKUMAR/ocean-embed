@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Training Monitor — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.progress-track { height:12px; border-radius:6px; background:rgba(34,229,255,0.1); overflow:hidden; margin:8px 0; }
+.progress-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--ocean-blue),var(--cyan)); box-shadow:0 0 10px var(--cyan); transition:width 400ms ease; position:relative; }
+.progress-fill::after { content:''; position:absolute; top:0;right:0;bottom:0; width:30px; background:rgba(255,255,255,0.25); filter:blur(4px); }
+.metric-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(34,229,255,0.07); font-size:0.82rem; }
+.metric-val { color:var(--cyan); font-family:var(--font-display); font-size:0.85rem; }
+.log-line { font-size:0.72rem; color:var(--text-dim2); padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-family:monospace; }
+.log-line.ok { color:var(--accent-success); }
+.log-line.warn { color:var(--accent-warn); }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/admin">Admin</a><a href="/model-registry">Models</a><a href="/training" class="active">Training</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('training') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">Training Monitor</h1><p class="section-sub">Live model training progress, metrics and logs</p></div>
+      <button class="btn-neon btn-primary" id="retrain-btn" onclick="triggerRetrain()">⚡ Trigger Retrain</button>
+    </div>
+
+    <div class="widget-grid cols-4" style="margin-bottom:24px">
+      <div class="stat-card"><div class="stat-value" id="tr-status">—</div><div class="stat-label">Status</div></div>
+      <div class="stat-card"><div class="stat-value" id="tr-epoch">—</div><div class="stat-label">Current Epoch</div></div>
+      <div class="stat-card"><div class="stat-value" id="tr-loss">—</div><div class="stat-label">Train Loss</div></div>
+      <div class="stat-card"><div class="stat-value" id="tr-rmse">—</div><div class="stat-label">Val RMSE</div></div>
+    </div>
+
+    <div class="widget-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px">
+      <div class="glass-card">
+        <div class="card-title">Training Progress</div>
+        <div style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-dim2);margin-bottom:4px"><span>Epoch Progress</span><span id="epoch-pct">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="epoch-bar" style="width:0%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-dim2);margin:12px 0 4px"><span>Overall Progress</span><span id="overall-pct">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="overall-bar" style="width:0%"></div></div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="metric-row"><span>Architecture</span><span class="metric-val">OceanTransformer</span></div>
+          <div class="metric-row"><span>Parameters</span><span class="metric-val" id="tr-params">—</span></div>
+          <div class="metric-row"><span>Batch Size</span><span class="metric-val">4</span></div>
+          <div class="metric-row"><span>Learning Rate</span><span class="metric-val">0.001</span></div>
+          <div class="metric-row"><span>ETA</span><span class="metric-val" id="tr-eta">—</span></div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-title">Training Log</div>
+        <div id="train-log" style="margin-top:10px;max-height:260px;overflow-y:auto">
+          <div class="log-line ok">[SYSTEM] Training monitor ready</div>
+          <div class="log-line">[INFO] Waiting for training trigger…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-title">Training History</div>
+      <div id="train-history" style="margin-top:10px"><p style="color:var(--text-dim2);font-size:0.8rem">No training history found. Run pipeline to populate.</p></div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+const ADMIN_TOKEN = 'sha256_placeholder';
+
+async function triggerRetrain(){
+  const btn = document.getElementById('retrain-btn');
+  const pw = prompt('Enter admin password:');
+  if(!pw) return;
+  btn.textContent='Queuing…'; btn.disabled=true;
+  try {
+    const token = await sha256('sih_ocean_admin_2025');
+    const d = await OceanApp.api('/api/admin/retrain?token='+token, {method:'POST'});
+    OceanApp.toast(d.message||'Retrain queued', 'info');
+    addLog('[ADMIN] '+( d.message||'Retrain queued'), 'ok');
+    document.getElementById('tr-status').textContent='Queued';
+  } catch(e){ OceanApp.toast('Failed to trigger retrain','error'); }
+  btn.textContent='⚡ Trigger Retrain'; btn.disabled=false;
+}
+
+async function sha256(msg){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function addLog(msg, cls=''){
+  const el = document.getElementById('train-log');
+  const d = document.createElement('div');
+  d.className='log-line '+cls;
+  d.textContent='['+new Date().toTimeString().slice(0,8)+'] '+msg;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+
+async function loadStatus(){
+  try {
+    const d = await OceanApp.api('/api/status');
+    document.getElementById('tr-status').textContent = d.phase3==='complete'?'Trained':d.phase3||'—';
+    document.getElementById('tr-params').textContent = '~2M';
+    document.getElementById('tr-eta').textContent = d.phase3==='complete'?'Done':'—';
+    if(d.phase3==='complete'){
+      document.getElementById('epoch-bar').style.width='100%';
+      document.getElementById('overall-bar').style.width='100%';
+      document.getElementById('epoch-pct').textContent='100%';
+      document.getElementById('overall-pct').textContent='100%';
+      addLog('Phase 3 training complete','ok');
+    }
+  } catch(e){}
+}
+loadStatus();
+</script>
+</body>
+</html>

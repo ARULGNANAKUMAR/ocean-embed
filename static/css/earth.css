@@ -1,0 +1,130 @@
+/* ═══════════════════════════════════════════════════════════
+   earth.css — Earth page-specific layout & overlay panels
+   ═══════════════════════════════════════════════════════════ */
+
+body.earth-page {
+  overflow: hidden;
+  height: 100vh;
+}
+
+#earth-ui-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+#earth-ui-layer > * { pointer-events: auto; }
+
+/* ── Top info strip ── */
+#earth-top-strip {
+  position: fixed;
+  top: 70px;
+  left: 24px;
+  z-index: 50;
+  padding: 12px 18px;
+  display: flex;
+  gap: 22px;
+  font-size: 0.75rem;
+}
+#earth-top-strip .strip-item { display: flex; flex-direction: column; gap: 2px; }
+#earth-top-strip .strip-label { color: var(--text-dim2); font-size: 0.62rem; text-transform: uppercase; }
+#earth-top-strip .strip-value { color: var(--cyan); font-family: var(--font-display); }
+
+/* ── Grid info card (Section 5) ── */
+#grid-info-card {
+  position: fixed;
+  z-index: 300;
+  width: 280px;
+  padding: 18px;
+}
+#grid-info-card .gi-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+#grid-info-card .gi-row .gi-label { color: var(--text-dim2); }
+#grid-info-card .gi-row .gi-value { color: var(--cyan); font-weight: 600; }
+
+/* ── ARGO float popup ── */
+#argo-popup {
+  position: fixed;
+  z-index: 300;
+  width: 320px;
+  padding: 18px;
+}
+#argo-popup canvas { margin-top: 10px; }
+
+/* ── Bottom control dock ── */
+#earth-control-dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px;
+}
+.dock-btn {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  font-size: 1.1rem;
+}
+.dock-btn:hover, .dock-btn.active {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px var(--cyan-glow);
+}
+
+/* ── Timeline scrubber (Section 12) ── */
+#timeline-panel {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(560px, 90vw);
+  padding: 14px 20px;
+}
+#timeline-panel .tl-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--text-dim2);
+  margin-bottom: 6px;
+}
+#timeline-slider {
+  width: 100%;
+  accent-color: var(--cyan);
+}
+
+/* ── Ocean depth cutaway hint ── */
+#depth-hint {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  text-align: center;
+  color: var(--text-dim2);
+  font-size: 0.78rem;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* ── Return-to-globe button ── */
+#exit-depth-btn {
+  position: fixed;
+  top: 76px;
+  right: 24px;
+  z-index: 60;
+}

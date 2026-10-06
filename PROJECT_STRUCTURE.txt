@@ -1,0 +1,23 @@
+.
+ data
+  database
+  final
+  processed
+  raw
+ database
+ docs
+ logs
+ models
+ predictions
+ reports
+  phase1
+  phase2
+  phase3
+ static
+  audio
+  css
+  icons
+  js
+  textures
+ templates
+ tests

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>API Management — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.api-card { border:1px solid rgba(34,229,255,0.15); border-radius:12px; padding:16px; margin-bottom:12px; background:rgba(255,255,255,0.02); transition:border-color 180ms; }
+.api-card:hover { border-color:rgba(34,229,255,0.3); }
+.api-name { font-family:var(--font-display); font-size:0.82rem; color:var(--text-primary); letter-spacing:0.06em; }
+.api-status { font-size:0.68rem; padding:3px 8px; border-radius:999px; border:1px solid; }
+.api-status.ok { color:var(--accent-success); border-color:var(--accent-success); }
+.api-status.error { color:var(--accent-danger); border-color:var(--accent-danger); }
+.api-status.unknown, .api-status.not_configured { color:var(--text-dim2); border-color:rgba(157,180,204,0.3); }
+.api-key-input { background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-primary); padding:8px 12px; font-size:0.82rem; width:100%; margin-top:8px; }
+.api-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.api-btn { padding:5px 12px; border-radius:7px; border:1px solid; font-size:0.7rem; cursor:pointer; font-family:var(--font-body); transition:all 150ms; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; }
+.api-btn.test { border-color:var(--cyan); color:var(--cyan); background:rgba(34,229,255,0.07); }
+.api-btn.test:hover { background:rgba(34,229,255,0.15); }
+.api-btn.save { border-color:var(--accent-success); color:var(--accent-success); background:rgba(46,230,168,0.07); }
+.api-btn.toggle-off { border-color:rgba(255,59,92,0.4); color:var(--accent-danger); background:transparent; }
+.sched-row { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid rgba(34,229,255,0.07); font-size:0.82rem; }
+.sched-row:last-child { border-bottom:none; }
+select.mini-select { background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:6px; color:var(--text-primary); padding:5px 8px; font-size:0.75rem; }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/admin">Admin</a><a href="/api-management" class="active">API Keys</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('api_management') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">API Management Center</h1><p class="section-sub">Configure and test external data source API keys</p></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div class="glass-card" style="margin-bottom:20px">
+          <div class="card-title">Data Source API Keys</div>
+          <p style="font-size:0.75rem;color:var(--text-dim2);margin:8px 0 14px">Keys are encrypted at rest. Leave blank to keep existing key.</p>
+          <div id="api-keys-list"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="glass-card" style="margin-bottom:20px">
+          <div class="card-title">Data Sync Scheduler</div>
+          <div id="scheduler-list" style="margin-top:10px"></div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-title">Sync Logs</div>
+          <div id="sync-log" style="max-height:200px;overflow-y:auto;margin-top:10px;font-size:0.72rem;color:var(--text-dim2);font-family:monospace">
+            <div>Ready.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+function addLog(msg){ const el=document.getElementById('sync-log'); const d=document.createElement('div'); d.textContent='['+new Date().toTimeString().slice(0,8)+'] '+msg; el.appendChild(d); el.scrollTop=el.scrollHeight; }
+
+async function loadKeys(){
+  try {
+    const d = await OceanApp.api('/api/apikeys');
+    const el=document.getElementById('api-keys-list');
+    el.innerHTML = d.keys.map(k=>`
+      <div class="api-card" id="key-${k.id}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span class="api-name">${k.service}</span>
+          <span class="api-status ${k.status}">${k.status}</span>
+        </div>
+        ${k.last_sync?`<div style="font-size:0.68rem;color:var(--text-dim2)">Last sync: ${k.last_sync.slice(0,16)}</div>`:''}
+        <input class="api-key-input" type="password" placeholder="Enter API key (leave blank to keep)" id="kv-${k.id}"/>
+        <div class="api-actions">
+          <button class="api-btn save" onclick="saveKey('${k.service}',${k.id})">💾 Save</button>
+          <button class="api-btn test" onclick="testKey('${k.service}')">▶ Test</button>
+          <button class="api-btn toggle-off" onclick="toggleKey('${k.service}',${k.enabled?0:1})">${k.enabled?'Disable':'Enable'}</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e){ OceanApp.toast('Failed to load API keys','error'); }
+}
+
+async function saveKey(service, id){
+  const val=document.getElementById('kv-'+id).value.trim();
+  if(!val){ OceanApp.toast('Enter a key first','error'); return; }
+  try {
+    await OceanApp.api('/api/apikeys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service,key:val})});
+    OceanApp.toast(service+' key saved','success');
+    addLog('Key saved for '+service);
+    loadKeys();
+  } catch(e){ OceanApp.toast('Save failed','error'); }
+}
+
+async function testKey(service){
+  try {
+    await OceanApp.api('/api/apikeys/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service})});
+    OceanApp.toast(service+' tested OK','success');
+    addLog('Test OK: '+service);
+    loadKeys();
+  } catch(e){ OceanApp.toast('Test failed','error'); }
+}
+
+async function toggleKey(service, enabled){
+  try {
+    await OceanApp.api('/api/apikeys/'+encodeURIComponent(service),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:!!enabled})});
+    OceanApp.toast(service+(enabled?' enabled':' disabled'),'info');
+    loadKeys();
+  } catch(e){}
+}
+
+async function loadScheduler(){
+  try {
+    const d=await OceanApp.api('/api/scheduler');
+    const el=document.getElementById('scheduler-list');
+    el.innerHTML=d.jobs.map(j=>`
+      <div class="sched-row">
+        <div>
+          <div style="font-size:0.82rem">${j.job_name}</div>
+          <div style="font-size:0.68rem;color:var(--text-dim2)">${j.last_run?'Last: '+j.last_run.slice(0,16):'Never run'} · <span style="color:${j.status==='running'?'var(--accent-success)':'var(--text-dim2)}'}">${j.status}</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select class="mini-select" onchange="updateInterval('${j.job_name}',this.value)">
+            ${['hourly','daily','weekly','manual'].map(i=>`<option value="${i}" ${j.interval===i?'selected':''}>${i}</option>`).join('')}
+          </select>
+          <button class="api-btn test" onclick="runJob('${j.job_name}')">▶</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e){}
+}
+
+async function runJob(name){
+  try {
+    await OceanApp.api('/api/scheduler/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_name:name})});
+    OceanApp.toast(name+' triggered','info');
+    addLog('Job triggered: '+name);
+    loadScheduler();
+  } catch(e){}
+}
+
+async function updateInterval(name,interval){
+  try {
+    await OceanApp.api('/api/scheduler/'+encodeURIComponent(name),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval})});
+    OceanApp.toast('Interval updated','success');
+  } catch(e){}
+}
+
+loadKeys(); loadScheduler();
+</script>
+</body>
+</html>

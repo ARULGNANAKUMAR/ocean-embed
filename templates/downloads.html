@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Downloads — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.dl-card { display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(34,229,255,0.12); margin-bottom:10px; transition:all 180ms; }
+.dl-card:hover { border-color:rgba(34,229,255,0.3); background:rgba(34,229,255,0.04); }
+.dl-icon { font-size:1.6rem; margin-right:14px; }
+.dl-info b { font-size:0.88rem; display:block; }
+.dl-info span { font-size:0.72rem; color:var(--text-dim2); }
+.dl-btn { background:rgba(34,229,255,0.1); border:1px solid rgba(34,229,255,0.3); color:var(--cyan); padding:7px 16px; border-radius:8px; cursor:pointer; font-size:0.75rem; font-family:var(--font-body); letter-spacing:0.04em; text-transform:uppercase; transition:all 180ms; font-weight:700; }
+.dl-btn:hover { background:rgba(34,229,255,0.2); }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/dashboard">Dashboard</a><a href="/downloads" class="active">Downloads</a><a href="/reports">Reports</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('downloads') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">Download Center</h1><p class="section-sub">Export predictions, reports, and validation data</p></div>
+    </div>
+
+    <div class="widget-grid cols-3" style="margin-bottom:24px">
+      <div class="stat-card"><div class="stat-value" id="dl-pred-count">—</div><div class="stat-label">Prediction Records</div></div>
+      <div class="stat-card"><div class="stat-value" id="dl-hw-count">—</div><div class="stat-label">Heatwave Events</div></div>
+      <div class="stat-card"><div class="stat-value" id="dl-model">—</div><div class="stat-label">Model Version</div></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:20px">
+      <div class="card-title">Prediction Exports</div>
+      <div style="margin-top:14px">
+        <div class="dl-card">
+          <div style="display:flex;align-items:center"><span class="dl-icon">📦</span><div class="dl-info"><b>Prediction NetCDF</b><span>Full 4D subsurface temperature prediction (lat × lon × depth × time)</span></div></div>
+          <button class="dl-btn" onclick="dlNetcdf()">↓ Download .nc</button>
+        </div>
+        <div class="dl-card">
+          <div style="display:flex;align-items:center"><span class="dl-icon">📊</span><div class="dl-info"><b>Prediction CSV</b><span>Surface temperature predictions in tabular format</span></div></div>
+          <button class="dl-btn" onclick="dlCsv()">↓ Download .csv</button>
+        </div>
+        <div class="dl-card">
+          <div style="display:flex;align-items:center"><span class="dl-icon">🔥</span><div class="dl-info"><b>Heatwave Report PDF</b><span>Marine heatwave analysis with hotspot map and severity</span></div></div>
+          <button class="dl-btn" onclick="OceanApp.toast('Generating PDF…','info')">↓ Download .pdf</button>
+        </div>
+        <div class="dl-card">
+          <div style="display:flex;align-items:center"><span class="dl-icon">✅</span><div class="dl-info"><b>Validation Report CSV</b><span>ARGO float vs. model comparison metrics</span></div></div>
+          <button class="dl-btn" onclick="dlValidation()">↓ Download .csv</button>
+        </div>
+        <div class="dl-card">
+          <div style="display:flex;align-items:center"><span class="dl-icon">📈</span><div class="dl-info"><b>Analytics PDF</b><span>Platform analytics, dataset inventory and model performance</span></div></div>
+          <button class="dl-btn" onclick="OceanApp.toast('Generating report…','info')">↓ Download .pdf</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-title">Reports Archive</div>
+      <div id="reports-list" style="margin-top:12px"><div class="skeleton" style="height:40px;border-radius:8px;margin-bottom:8px"></div><div class="skeleton" style="height:40px;border-radius:8px;margin-bottom:8px"></div></div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+async function init(){
+  try {
+    const [hw, pred] = await Promise.all([OceanApp.api('/api/heatwave'), OceanApp.api('/api/prediction/latest').catch(()=>({}))]);
+    document.getElementById('dl-hw-count').textContent = hw.total||0;
+    document.getElementById('dl-pred-count').textContent = pred.depths_predicted||'—';
+    document.getElementById('dl-model').textContent = 'OceanTransformer v3';
+  } catch(e){}
+  try {
+    const reps = await OceanApp.api('/api/reports');
+    const el = document.getElementById('reports-list');
+    const files = reps.reports||[];
+    if(!files.length){ el.innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem">No report files found. Run the pipeline to generate reports.</p>'; return; }
+    el.innerHTML = files.slice(0,15).map(f=>{
+      const name=f.split('/').pop();
+      return `<div class="dl-card"><div style="display:flex;align-items:center"><span class="dl-icon">📄</span><div class="dl-info"><b>${name}</b><span>${f}</span></div></div><a href="/api/reports/file?path=${encodeURIComponent(f)}" class="dl-btn">↓ Open</a></div>`;
+    }).join('');
+  } catch(e){ document.getElementById('reports-list').innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem">Reports unavailable.</p>'; }
+}
+function dlNetcdf(){ window.location.href='/api/user/download/netcdf'; OceanApp.toast('Downloading NetCDF…','info'); }
+function dlCsv(){ window.location.href='/api/user/download/csv'; OceanApp.toast('Downloading CSV…','info'); }
+function dlValidation(){ OceanApp.toast('Validation export coming soon','info'); }
+init();
+</script>
+</body>
+</html>

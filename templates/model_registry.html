@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Model Registry — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.model-row { display:grid; grid-template-columns:1fr auto auto auto auto; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid rgba(34,229,255,0.07); font-size:0.82rem; }
+.model-row:last-child { border-bottom:none; }
+.model-tag { font-family:var(--font-display); font-size:0.75rem; color:var(--cyan); }
+.model-status { padding:3px 8px; border-radius:999px; border:1px solid; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.07em; }
+.model-status.active { color:var(--accent-success); border-color:var(--accent-success); }
+.model-status.inactive { color:var(--text-dim2); border-color:rgba(157,180,204,0.2); }
+.model-status.rolled_back { color:var(--accent-danger); border-color:rgba(255,59,92,0.3); }
+.sm-btn { padding:4px 10px; border-radius:6px; border:1px solid rgba(34,229,255,0.3); color:var(--cyan); background:transparent; font-size:0.7rem; cursor:pointer; font-family:var(--font-body); font-weight:700; transition:all 150ms; }
+.sm-btn:hover { background:rgba(34,229,255,0.1); }
+.compare-panel { display:none; }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/admin">Admin</a><a href="/training">Training</a><a href="/model-registry" class="active">Models</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('model_registry') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">Model Registry</h1><p class="section-sub">Version control, activation and performance comparison</p></div>
+      <button class="btn-neon" onclick="toggleCompare()">⚖ Compare Models</button>
+    </div>
+
+    <div class="widget-grid cols-4" style="margin-bottom:24px">
+      <div class="stat-card"><div class="stat-value" id="mr-total">—</div><div class="stat-label">Total Models</div></div>
+      <div class="stat-card"><div class="stat-value" id="mr-active" style="color:var(--accent-success)">—</div><div class="stat-label">Active Model</div></div>
+      <div class="stat-card"><div class="stat-value" id="mr-best-rmse">—</div><div class="stat-label">Best RMSE</div></div>
+      <div class="stat-card"><div class="stat-value" id="mr-latest">—</div><div class="stat-label">Latest Version</div></div>
+    </div>
+
+    <!-- Compare panel -->
+    <div class="glass-card compare-panel" id="compare-panel" style="margin-bottom:20px">
+      <div class="card-title">Model Comparison</div>
+      <p style="font-size:0.75rem;color:var(--text-dim2);margin:8px 0">Enter comma-separated model IDs to compare (e.g. 1,2,3)</p>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="compare-ids" placeholder="1,2" style="background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-primary);padding:8px 12px;font-size:0.82rem;width:200px"/>
+        <button class="btn-neon" onclick="compareModels()">Compare</button>
+      </div>
+      <div id="compare-result" style="margin-top:14px"></div>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-title">All Model Versions</div>
+      <div style="margin-top:14px">
+        <div class="model-row" style="font-size:0.7rem;color:var(--text-dim2);text-transform:uppercase;letter-spacing:0.07em">
+          <span>Version Tag</span><span>RMSE</span><span>MAE</span><span>Status</span><span>Actions</span>
+        </div>
+        <div id="model-list"><div class="skeleton" style="height:50px;border-radius:8px;margin:6px 0"></div><div class="skeleton" style="height:50px;border-radius:8px;margin:6px 0"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+function toggleCompare(){ const p=document.getElementById('compare-panel'); p.style.display=p.style.display==='block'?'none':'block'; }
+
+async function loadModels(){
+  try {
+    const d=await OceanApp.api('/api/registry/models');
+    const models=d.models||[];
+    document.getElementById('mr-total').textContent=models.length;
+    const active=models.find(m=>m.status==='active');
+    document.getElementById('mr-active').textContent=active?active.version_tag:'None';
+    const best=models.filter(m=>m.rmse).sort((a,b)=>a.rmse-b.rmse)[0];
+    document.getElementById('mr-best-rmse').textContent=best?(best.rmse).toFixed(3):'—';
+    document.getElementById('mr-latest').textContent=models.length?models[0].version_tag:'—';
+
+    const el=document.getElementById('model-list');
+    if(!models.length){ el.innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem;padding:14px 0">No models registered. Run training pipeline to register models.</p>'; return; }
+    el.innerHTML=models.map(m=>`
+      <div class="model-row">
+        <div><div class="model-tag">${m.version_tag}</div><div style="font-size:0.68rem;color:var(--text-dim2)">${m.architecture||'OceanTransformer'} · ${(m.training_date||'').slice(0,10)}</div></div>
+        <span>${m.rmse!=null?m.rmse.toFixed(3):'—'}</span>
+        <span>${m.mae!=null?m.mae.toFixed(3):'—'}</span>
+        <span class="model-status ${m.status||'inactive'}">${m.status||'inactive'}</span>
+        <div style="display:flex;gap:6px">
+          <button class="sm-btn" onclick="activateModel(${m.id})">Activate</button>
+          <button class="sm-btn" style="border-color:rgba(255,59,92,0.4);color:var(--accent-danger)" onclick="rollbackModel(${m.id})">Rollback</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e){ OceanApp.toast('Failed to load models','error'); }
+}
+
+async function activateModel(id){
+  try {
+    await OceanApp.api('/api/registry/models/activate/'+id,{method:'POST'});
+    OceanApp.toast('Model activated','success'); loadModels();
+  } catch(e){ OceanApp.toast('Failed','error'); }
+}
+
+async function rollbackModel(id){
+  if(!confirm('Roll back this model version?')) return;
+  try {
+    await OceanApp.api('/api/registry/models/rollback/'+id,{method:'POST'});
+    OceanApp.toast('Model rolled back','info'); loadModels();
+  } catch(e){ OceanApp.toast('Failed','error'); }
+}
+
+async function compareModels(){
+  const ids=document.getElementById('compare-ids').value;
+  try {
+    const d=await OceanApp.api('/api/registry/models/compare?ids='+encodeURIComponent(ids));
+    const models=d.models||[];
+    if(!models.length){ document.getElementById('compare-result').innerHTML='<p style="color:var(--text-dim2)">No models found for those IDs.</p>'; return; }
+    document.getElementById('compare-result').innerHTML=`
+      <div style="overflow-x:auto"><table style="width:100%;font-size:0.78rem;border-collapse:collapse">
+        <tr style="color:var(--cyan);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.07em">
+          <th style="text-align:left;padding:6px 10px">Version</th><th style="padding:6px 10px">Architecture</th><th style="padding:6px 10px">RMSE</th><th style="padding:6px 10px">MAE</th><th style="padding:6px 10px">Val Loss</th><th style="padding:6px 10px">Status</th>
+        </tr>
+        ${models.map(m=>`<tr style="border-top:1px solid rgba(34,229,255,0.07)"><td style="padding:6px 10px;font-family:var(--font-display);font-size:0.72rem">${m.version_tag}</td><td style="padding:6px 10px;color:var(--text-dim2)">${m.architecture||'—'}</td><td style="padding:6px 10px">${m.rmse!=null?m.rmse.toFixed(3):'—'}</td><td style="padding:6px 10px">${m.mae!=null?m.mae.toFixed(3):'—'}</td><td style="padding:6px 10px">${m.val_loss!=null?m.val_loss.toFixed(4):'—'}</td><td style="padding:6px 10px"><span class="model-status ${m.status}">${m.status}</span></td></tr>`).join('')}
+      </table></div>`;
+  } catch(e){ OceanApp.toast('Compare failed','error'); }
+}
+
+loadModels();
+</script>
+</body>
+</html>

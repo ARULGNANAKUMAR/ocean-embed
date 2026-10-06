@@ -1,0 +1,229 @@
+/* ═══════════════════════════════════════════════════════════
+   hologram.css — 3D Earth container, holographic grid overlays
+   ═══════════════════════════════════════════════════════════ */
+
+#globe-container {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+#globe-canvas-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Coordinate grid overlay labels ── */
+.coord-label {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  color: var(--cyan);
+  text-shadow: 0 0 6px var(--cyan-glow);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+/* ── Live cursor coordinate readout ── */
+#cursor-coords {
+  position: fixed;
+  bottom: 20px;
+  left: 24px;
+  z-index: 50;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--cyan);
+  background: rgba(6,15,28,0.55);
+  border: 1px solid rgba(34,229,255,0.25);
+  border-radius: 8px;
+  padding: 8px 14px;
+  backdrop-filter: blur(10px);
+  letter-spacing: 0.05em;
+}
+
+/* ── Grid cell hover tooltip ── */
+#grid-tooltip {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  background: rgba(6,15,28,0.85);
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  box-shadow: 0 0 16px rgba(34,229,255,0.3);
+  display: none;
+}
+
+/* ── Depth layer slider (Section 6) ── */
+#depth-slider-panel {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+#depth-slider-panel .depth-label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--cyan);
+  text-align: center;
+}
+
+#depth-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 8px;
+  height: 260px;
+  appearance: none;
+  background: linear-gradient(to top, #ff0844, #ffb020, #ffe45e, #2ee6a8, var(--cyan), var(--ocean-blue));
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+#depth-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--cyan);
+  box-shadow: 0 0 12px var(--cyan-glow);
+  cursor: grab;
+}
+
+#opacity-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+#opacity-slider {
+  width: 90px;
+  accent-color: var(--cyan);
+}
+
+/* ── Layer toggle panel (Section 8) ── */
+#layer-toggle-panel {
+  position: fixed;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  padding: 18px 16px;
+  min-width: 190px;
+}
+
+#layer-toggle-panel .toggle-title {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.layer-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 36px; height: 18px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.toggle-switch.active { background: var(--cyan-dim); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--transition-fast);
+}
+.toggle-switch.active::after {
+  transform: translateX(18px);
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+/* ── Temperature legend (Section 7) ── */
+#temp-legend {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 60;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#temp-legend .legend-title {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.legend-scale {
+  width: 180px;
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(to right, #1c4fd8, #2ee6a8, #ffe45e, #ff8a20, #ff0844);
+}
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  color: var(--text-dim2);
+  margin-top: 4px;
+}
+
+/* ── Zoom breadcrumb (Section 3) ── */
+#zoom-breadcrumb {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+#zoom-breadcrumb .crumb {
+  color: var(--text-dim2);
+  transition: color var(--transition-fast);
+}
+#zoom-breadcrumb .crumb.active {
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan-glow);
+}
+#zoom-breadcrumb .crumb::after {
+  content: '›';
+  margin-left: 6px;
+  color: var(--text-dim2);
+}
+#zoom-breadcrumb .crumb:last-child::after { content: ''; }
+
+/* ── ARGO float marker glow ── */
+.argo-marker-glow {
+  filter: drop-shadow(0 0 6px #22e5ff);
+}

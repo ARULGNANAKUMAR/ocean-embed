@@ -1,0 +1,160 @@
+/* ═══════════════════════════════════════════════════════════
+   animations.css — Cinematic effects, ripples, glow, particles
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Ripple click effect ── */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(34,229,255,0.45);
+  transform: scale(0);
+  animation: ripple-anim 650ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes ripple-anim {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ── Ocean shimmer background band ── */
+.ocean-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.ocean-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 60%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(34,229,255,0.15), transparent);
+  animation: shimmer-sweep 3.2s infinite;
+}
+@keyframes shimmer-sweep {
+  0%   { left: -60%; }
+  100% { left: 130%; }
+}
+
+/* ── Floating hologram bob ── */
+.float-bob {
+  animation: float-bob-anim 4.5s ease-in-out infinite;
+}
+@keyframes float-bob-anim {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+/* ── Pulse glow (used for AI status dots, alerts) ── */
+.pulse-glow {
+  animation: pulse-glow-anim 1.8s ease-in-out infinite;
+}
+@keyframes pulse-glow-anim {
+  0%, 100% { box-shadow: 0 0 6px currentColor; }
+  50%      { box-shadow: 0 0 22px currentColor; }
+}
+
+/* ── Animated gradient border ── */
+.animated-border {
+  position: relative;
+  border-radius: var(--radius-lg);
+}
+.animated-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--angle, 0deg), var(--cyan), transparent 40%, var(--ocean-blue), transparent 80%, var(--cyan));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotate-border 4s linear infinite;
+}
+@keyframes rotate-border {
+  to { --angle: 360deg; }
+}
+@property --angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* ── Fade / slide transitions used by GSAP-controlled pages ── */
+.gsap-fade-up { opacity: 0; transform: translateY(30px); }
+.gsap-fade-in { opacity: 0; }
+.gsap-scale-in { opacity: 0; transform: scale(0.85); }
+
+/* ── Loading overlay (page/scene transitions) ── */
+#loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: var(--navy-950);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  transition: opacity 600ms ease, visibility 600ms;
+}
+#loading-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+#loading-overlay .loading-text {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+#loading-overlay .loading-bar {
+  width: 220px;
+  height: 3px;
+  background: rgba(34,229,255,0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+#loading-overlay .loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--ocean-blue), var(--cyan));
+  box-shadow: 0 0 12px var(--cyan);
+  transition: width 300ms ease;
+}
+
+/* ── Neural particle canvas (embedding visualization) ── */
+.neural-particle {
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+/* ── Mic pulse (voice assistant) ── */
+.mic-pulse-ring {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  opacity: 0;
+}
+.mic-listening .mic-pulse-ring {
+  animation: mic-pulse-anim 1.5s ease-out infinite;
+}
+@keyframes mic-pulse-anim {
+  0%   { opacity: 0.8; transform: scale(0.8); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+
+/* ── Skeleton loading shimmer for data widgets ── */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 37%, rgba(255,255,255,0.03) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-anim 1.4s ease infinite;
+  border-radius: 6px;
+}
+@keyframes skeleton-anim {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}

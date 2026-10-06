@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Database Health — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.health-bar { height:8px; border-radius:4px; background:rgba(34,229,255,0.1); margin-top:6px; overflow:hidden; }
+.health-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--ocean-blue),var(--cyan)); box-shadow:0 0 8px var(--cyan); transition:width 600ms ease; }
+.table-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid rgba(34,229,255,0.06); font-size:0.82rem; }
+.table-row:last-child { border-bottom:none; }
+.table-name { color:var(--cyan); font-family:var(--font-display); font-size:0.75rem; }
+.table-count { color:var(--text-secondary); }
+.ok-dot { width:8px;height:8px;border-radius:50%;background:var(--accent-success);box-shadow:0 0 6px var(--accent-success); }
+.fail-dot { width:8px;height:8px;border-radius:50%;background:var(--accent-danger); }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/admin">Admin</a><a href="/database" class="active">Database</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('database') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">Database Health</h1><p class="section-sub">SQLite schema status, table records and storage</p></div>
+      <button class="btn-neon" onclick="loadHealth()">↻ Refresh</button>
+    </div>
+
+    <div class="widget-grid cols-4" style="margin-bottom:24px">
+      <div class="stat-card"><div class="stat-value" id="dh-score" style="color:var(--accent-success)">—</div><div class="stat-label">Health Score</div></div>
+      <div class="stat-card"><div class="stat-value" id="dh-tables">—</div><div class="stat-label">Tables OK</div></div>
+      <div class="stat-card"><div class="stat-value" id="dh-records">—</div><div class="stat-label">Total Records</div></div>
+      <div class="stat-card"><div class="stat-value" id="dh-size">—</div><div class="stat-label">Storage</div></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:20px">
+      <div class="card-title">Health Score</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:10px">
+        <span id="score-label" style="font-family:var(--font-display);font-size:2rem;color:var(--accent-success)">—</span>
+        <div style="flex:1"><div class="health-bar"><div class="health-bar-fill" id="score-bar" style="width:0%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="widget-grid" style="grid-template-columns:1fr 1fr">
+      <div class="glass-card">
+        <div class="card-title">Phase 1 Tables</div>
+        <div id="p1-tables" style="margin-top:10px"></div>
+      </div>
+      <div class="glass-card">
+        <div class="card-title">Existing Tables</div>
+        <div id="ex-tables" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+const P1 = new Set(['users','sessions','user_settings','favorite_locations','map_bookmarks','activity_log','dataset_registry','dataset_versions','upload_logs','model_registry','api_keys','scheduler_jobs','report_catalog','notifications']);
+
+async function loadHealth(){
+  try {
+    const d = await OceanApp.api('/api/db/health');
+    document.getElementById('dh-score').textContent = d.health_score+'/100';
+    document.getElementById('dh-records').textContent = d.total_records.toLocaleString();
+    document.getElementById('dh-size').textContent = d.storage_kb ? d.storage_kb+'KB' : '—';
+    const ok = d.tables.filter(t=>t.ok).length;
+    document.getElementById('dh-tables').textContent = ok+'/'+d.tables.length;
+    document.getElementById('score-label').textContent = d.health_score+'%';
+    document.getElementById('score-bar').style.width = d.health_score+'%';
+    document.getElementById('score-bar').style.background = d.health_score>80?'linear-gradient(90deg,#1565c0,var(--cyan))':'linear-gradient(90deg,#f39c12,#e74c3c)';
+
+    const p1El = document.getElementById('p1-tables');
+    const exEl = document.getElementById('ex-tables');
+    p1El.innerHTML=''; exEl.innerHTML='';
+    for(const t of d.tables){
+      const row=`<div class="table-row"><div style="display:flex;align-items:center;gap:8px"><div class="${t.ok?'ok-dot':'fail-dot'}"></div><span class="table-name">${t.name}</span></div><span class="table-count">${t.records.toLocaleString()} rows</span></div>`;
+      (P1.has(t.name)?p1El:exEl).insertAdjacentHTML('beforeend',row);
+    }
+    if(!p1El.innerHTML) p1El.innerHTML='<p style="color:var(--text-dim2);font-size:0.78rem">Phase 1 tables will appear after first request.</p>';
+    if(!exEl.innerHTML) exEl.innerHTML='<p style="color:var(--text-dim2);font-size:0.78rem">Run pipeline to create existing tables.</p>';
+  } catch(e){ OceanApp.toast('Failed to load health','error'); }
+}
+loadHealth();
+setInterval(loadHealth, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>North Indian Ocean Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+<style>
+  body.home-page { overflow-x: hidden; }
+  .hero-section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 24px 60px;
+    position: relative;
+  }
+  .hero-badge {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    opacity: 0.85;
+  }
+  .hero-title {
+    font-size: clamp(2.2rem, 6vw, 4.4rem);
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1.05;
+    background: linear-gradient(135deg, #eaf6ff, var(--cyan) 60%, var(--ocean-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(34,229,255,0.25);
+    margin-bottom: 20px;
+  }
+  .hero-subtitle {
+    max-width: 620px;
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+  }
+  #ai-greeting {
+    color: var(--cyan);
+    font-size: 0.95rem;
+    margin-bottom: 30px;
+    min-height: 1.4em;
+  }
+  .hero-status-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 40px;
+    font-size: 0.82rem;
+  }
+  .hero-status-row .stat-chip {
+    padding: 8px 16px;
+    border-radius: 999px;
+  }
+  .hero-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 780px;
+    width: 100%;
+  }
+  @media (max-width: 720px) {
+    .hero-buttons { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 460px) {
+    .hero-buttons { grid-template-columns: 1fr; }
+  }
+  .hero-btn-icon { font-size: 1.3rem; display: block; margin-bottom: 6px; }
+
+  #hero-globe-preview {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(720px, 90vw);
+    height: min(720px, 90vw);
+    z-index: -1;
+    opacity: 0.5;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34,229,255,0.14), transparent 70%);
+    animation: float-bob-anim 8s ease-in-out infinite;
+  }
+  #hero-globe-preview::before {
+    content: '';
+    position: absolute;
+    inset: 8%;
+    border-radius: 50%;
+    border: 1px solid rgba(34,229,255,0.25);
+    box-shadow: inset 0 0 60px rgba(34,229,255,0.15), 0 0 80px rgba(34,229,255,0.1);
+    animation: spin 40s linear infinite;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 18px, rgba(34,229,255,0.05) 18px 19px),
+      repeating-linear-gradient(90deg, transparent 0 18px, rgba(34,229,255,0.05) 18px 19px);
+  }
+
+  #wave-canvas {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%; height: 220px;
+    z-index: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body class="home-page">
+<canvas id="bg-canvas"></canvas>
+<canvas id="wave-canvas"></canvas>
+
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/" class="active">Home</a>
+    <a href="/earth">Digital Twin</a>
+    <a href="/gismap">GIS Map</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/heatwave">Heatwave</a>
+    <a href="/voice">Voice AI</a>
+    <a href="/about">About</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)">
+    <span id="live-date"></span> · <span id="live-utc"></span>
+  </div>
+</nav>
+
+<div class="app-shell">
+  <section class="hero-section">
+    <div id="hero-globe-preview"></div>
+    <div class="hero-badge">Smart India Hackathon · North Indian Ocean</div>
+    <h1 class="hero-title">Ocean Intelligence<br/>Command Center</h1>
+    <p class="hero-subtitle">
+      AI-powered digital twin of the North Indian Ocean — subsurface temperature reconstruction,
+      marine heatwave prediction, and explainable ocean intelligence.
+    </p>
+    <p id="ai-greeting"></p>
+
+    <div class="hero-status-row">
+      <span class="stat-chip badge badge-low">SYSTEM ONLINE</span>
+      <span id="live-ocean-status" class="stat-chip"></span>
+    </div>
+
+    <div class="hero-buttons">
+      <a class="btn-neon btn-primary" href="/earth">
+        <span class="hero-btn-icon">🌐</span> Ocean Digital Twin
+      </a>
+      <a class="btn-neon" href="/dashboard">
+        <span class="hero-btn-icon">📊</span> AI Prediction Dashboard
+      </a>
+      <a class="btn-neon" href="/heatwave">
+        <span class="hero-btn-icon">🔥</span> Marine Heatwave Center
+      </a>
+      <a class="btn-neon" href="/admin">
+        <span class="hero-btn-icon">🔐</span> Admin Login
+      </a>
+      <a class="btn-neon" href="/voice">
+        <span class="hero-btn-icon">🎙️</span> Voice Assistant
+      </a>
+      <a class="btn-neon" href="/about">
+        <span class="hero-btn-icon">ℹ️</span> About Project
+      </a>
+    </div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/weather.js') }}"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</body>
+</html>

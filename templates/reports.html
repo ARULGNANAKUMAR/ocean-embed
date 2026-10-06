@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Report Center — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.report-type-card { border:1px solid rgba(34,229,255,0.15); border-radius:12px; padding:18px; background:rgba(255,255,255,0.02); display:flex; flex-direction:column; gap:10px; transition:border-color 180ms; }
+.report-type-card:hover { border-color:rgba(34,229,255,0.35); }
+.report-icon { font-size:2rem; }
+.report-title { font-size:0.9rem; font-weight:700; }
+.report-desc { font-size:0.75rem; color:var(--text-dim2); flex:1; }
+.report-file-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid rgba(34,229,255,0.06); font-size:0.8rem; }
+.report-file-row:last-child { border-bottom:none; }
+.file-badge { font-size:0.65rem; padding:2px 7px; border-radius:999px; border:1px solid rgba(34,229,255,0.2); color:var(--text-secondary); }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/dashboard">Dashboard</a><a href="/downloads">Downloads</a><a href="/reports" class="active">Reports</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('reports') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">Report Center</h1><p class="section-sub">Generate, browse and export platform reports</p></div>
+    </div>
+
+    <div class="widget-grid cols-3" style="margin-bottom:24px">
+      <div class="stat-card"><div class="stat-value" id="rp-total">—</div><div class="stat-label">Report Files</div></div>
+      <div class="stat-card"><div class="stat-value" id="rp-size">—</div><div class="stat-label">Total Size</div></div>
+      <div class="stat-card"><div class="stat-value" id="rp-latest">—</div><div class="stat-label">Latest Report</div></div>
+    </div>
+
+    <!-- Report type cards -->
+    <div class="widget-grid cols-3" style="margin-bottom:24px">
+      <div class="report-type-card">
+        <div class="report-icon">🔍</div>
+        <div class="report-title">QC Report</div>
+        <div class="report-desc">Dataset quality control — missing values, variable detection, coordinate checks</div>
+        <button class="btn-neon" onclick="genReport('qc')">Generate</button>
+      </div>
+      <div class="report-type-card">
+        <div class="report-icon">🤖</div>
+        <div class="report-title">Training Report</div>
+        <div class="report-desc">Model training history, loss curves, epoch metrics and convergence analysis</div>
+        <button class="btn-neon" onclick="genReport('training')">Generate</button>
+      </div>
+      <div class="report-type-card">
+        <div class="report-icon">📡</div>
+        <div class="report-title">Prediction Report</div>
+        <div class="report-desc">Latest prediction output — depth profiles, surface maps, uncertainty bounds</div>
+        <button class="btn-neon" onclick="genReport('prediction')">Generate</button>
+      </div>
+      <div class="report-type-card">
+        <div class="report-icon">🔥</div>
+        <div class="report-title">Heatwave Report</div>
+        <div class="report-desc">Marine heatwave analysis, hotspot inventory, severity and impact assessment</div>
+        <button class="btn-neon" onclick="genReport('heatwave')">Generate</button>
+      </div>
+      <div class="report-type-card">
+        <div class="report-icon">✅</div>
+        <div class="report-title">Validation Report</div>
+        <div class="report-desc">ARGO float vs model comparison — RMSE, bias, depth-by-depth accuracy</div>
+        <button class="btn-neon" onclick="genReport('validation')">Generate</button>
+      </div>
+      <div class="report-type-card">
+        <div class="report-icon">📊</div>
+        <div class="report-title">Platform Analytics</div>
+        <div class="report-desc">Dataset inventory, user activity, API usage and model version history</div>
+        <button class="btn-neon" onclick="genReport('analytics')">Generate</button>
+      </div>
+    </div>
+
+    <!-- File list from pipeline reports/ -->
+    <div class="glass-card">
+      <div class="card-title">Pipeline Report Files</div>
+      <div id="report-files" style="margin-top:12px"><div class="skeleton" style="height:40px;border-radius:8px;margin-bottom:8px"></div><div class="skeleton" style="height:40px;border-radius:8px;margin-bottom:8px"></div></div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+async function genReport(type){
+  OceanApp.toast('Generating '+type+' report…','info');
+  // Delegate to existing pipeline report endpoints
+  try {
+    const endpoints={qc:'/api/quality',training:'/api/admin/history',prediction:'/api/prediction/latest',heatwave:'/api/heatwave',validation:'/api/argo/validation',analytics:'/api/platform/stats'};
+    const ep=endpoints[type]||'/api/summary';
+    const d=await OceanApp.api(ep);
+    const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=type+'_report_'+Date.now()+'.json'; a.click();
+    URL.revokeObjectURL(url);
+    OceanApp.toast(type+' report downloaded','success');
+  } catch(e){ OceanApp.toast('Report generation failed','error'); }
+}
+
+async function loadFiles(){
+  try {
+    const d=await OceanApp.api('/api/reports');
+    const files=d.reports||[];
+    document.getElementById('rp-total').textContent=files.length;
+    const sizes=files.filter(f=>f.size_bytes).map(f=>f.size_bytes);
+    const totalKb=Math.round(sizes.reduce((a,b)=>a+b,0)/1024);
+    document.getElementById('rp-size').textContent=totalKb?totalKb+'KB':'—';
+    document.getElementById('rp-latest').textContent=files.length?(files[0].split?files[0].split('/').pop():'—'):'None';
+    const el=document.getElementById('report-files');
+    if(!files.length){ el.innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem">No report files found. Run the pipeline to generate reports.</p>'; return; }
+    el.innerHTML=files.slice(0,20).map(f=>{
+      const name=typeof f==='string'?f.split('/').pop():(f.title||'report');
+      const ext=name.split('.').pop().toUpperCase();
+      return `<div class="report-file-row"><div style="display:flex;align-items:center;gap:10px"><span class="file-badge">${ext}</span><span>${name}</span></div><a href="#" onclick="OceanApp.toast('Direct file links available on server','info');return false" style="color:var(--cyan);font-size:0.75rem">Open ↗</a></div>`;
+    }).join('');
+  } catch(e){ document.getElementById('report-files').innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem">Reports unavailable.</p>'; }
+}
+loadFiles();
+</script>
+</body>
+</html>

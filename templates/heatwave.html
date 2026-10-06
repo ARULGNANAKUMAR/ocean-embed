@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marine Heatwave Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/earth">Digital Twin</a>
+    <a href="/gismap">GIS Map</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/heatwave" class="active">Heatwave</a>
+    <a href="/voice">Voice AI</a>
+    <a href="/about">About</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+
+<div class="container" style="padding-top:100px;padding-bottom:60px">
+  <div class="flex justify-between items-center" style="margin-bottom:24px">
+    <div>
+      <h1 style="margin-bottom:6px">Marine Heatwave Center</h1>
+      <p style="color:var(--text-secondary)">Active hotspots · <span id="heatwave-total-count">—</span> zones detected</p>
+    </div>
+    <div class="badge badge-high pulse-glow">LIVE MONITORING</div>
+  </div>
+
+  <div class="widget-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:24px">
+    <div class="glass-card chart-panel">
+      <div class="card-title">Severity Breakdown</div>
+      <canvas id="severity-breakdown-chart" height="220"></canvas>
+    </div>
+    <div class="glass-card chart-panel">
+      <div class="card-title">Heatwave Timeline</div>
+      <canvas id="heatwave-timeline-chart" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="glass-card" style="padding:20px;margin-bottom:24px">
+    <div class="card-title">Active Hotspots</div>
+    <div id="hotspot-list" style="margin-top:12px"></div>
+  </div>
+
+  <div>
+    <h2 style="font-size:1.1rem;margin-bottom:14px">Impact Predictions</h2>
+    <div id="impact-cards-container"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/timeline.js') }}"></script>
+</body>
+</html>

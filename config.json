@@ -1,0 +1,219 @@
+{
+  "project": {
+    "name": "North Indian Ocean Intelligence Platform",
+    "version": "2.0.0",
+    "phase": 2
+  },
+  "region": {
+    "full": {
+      "lat_min": 5.0,
+      "lat_max": 30.0,
+      "lon_min": 45.0,
+      "lon_max": 105.0
+    },
+    "prototype": {
+      "lat_min": 10.0,
+      "lat_max": 15.0,
+      "lon_min": 80.0,
+      "lon_max": 85.0
+    }
+  },
+  "prototype_dates": {
+    "start": "2025-01-01",
+    "end": "2025-01-30"
+  },
+  "expected_resolution": {
+    "spatial_deg": 0.25,
+    "temporal": "daily"
+  },
+  "glorys_required_depths": [
+    0.494,
+    1.541,
+    2.646,
+    3.819,
+    5.078,
+    6.441,
+    7.93,
+    9.573,
+    11.405,
+    13.467,
+    15.81,
+    18.496,
+    21.599,
+    25.211,
+    29.445
+  ],
+  "target_depths": [
+    0,
+    5,
+    10,
+    20,
+    30,
+    50,
+    75,
+    100,
+    125,
+    150,
+    200,
+    300,
+    500,
+    700,
+    1000
+  ],
+  "temperature_range": {
+    "min": -2.0,
+    "max": 35.0
+  },
+  "salinity_range": {
+    "min": 0.0,
+    "max": 45.0
+  },
+  "depth_range": {
+    "min": 0.0,
+    "max": 6000.0
+  },
+  "dataset_types": {
+    "CORE_INPUT": [
+      "sst",
+      "sss",
+      "sla",
+      "current_u",
+      "current_v",
+      "wind_u",
+      "wind_v"
+    ],
+    "TARGET": [
+      "glorys",
+      "thetao"
+    ],
+    "VALIDATION": [
+      "argo"
+    ],
+    "AUXILIARY": [
+      "ioi",
+      "omi",
+      "indian_ocean_index",
+      "sea_level_trend"
+    ]
+  },
+  "paths": {
+    "raw_data": "data/raw",
+    "processed_data": "data/processed",
+    "final_data": "data/final",
+    "database": "data/database/ocean_platform.db",
+    "reports": "reports/phase1",
+    "reports_phase2": "reports/phase2",
+    "predictions": "predictions",
+    "logs": "logs"
+  },
+  "phase2": {
+    "interpolation_limit": 3,
+    "sla_bin_size_deg": 0.25,
+    "chunk_size": {
+      "time": 10,
+      "lat": 21,
+      "lon": 21
+    },
+    "use_float32": true,
+    "variable_aliases": {
+      "sst": [
+        "sst",
+        "analysed_sst",
+        "sea_surface_temperature",
+        "tos"
+      ],
+      "sss": [
+        "sss",
+        "so",
+        "salinity",
+        "sea_surface_salinity"
+      ],
+      "sla": [
+        "sla",
+        "adt",
+        "sea_level_anomaly",
+        "zos"
+      ],
+      "current_u": [
+        "ugos",
+        "uo",
+        "u_current",
+        "surface_current_u",
+        "u"
+      ],
+      "current_v": [
+        "vgos",
+        "vo",
+        "v_current",
+        "surface_current_v",
+        "v"
+      ],
+      "wind_u": [
+        "uwnd",
+        "u10",
+        "wind_u",
+        "u_wind",
+        "eastward_wind"
+      ],
+      "wind_v": [
+        "vwnd",
+        "v10",
+        "wind_v",
+        "v_wind",
+        "northward_wind"
+      ],
+      "thetao": [
+        "thetao",
+        "temp",
+        "temperature",
+        "sea_water_potential_temperature"
+      ]
+    },
+    "unit_conversions": {
+      "kelvin_to_celsius": {
+        "from": [
+          "K",
+          "kelvin",
+          "Kelvin"
+        ],
+        "offset": -273.15
+      },
+      "cm_to_m": {
+        "from": [
+          "cm",
+          "centimeter"
+        ],
+        "scale": 0.01
+      }
+    },
+    "temporal_source_resolution": {
+      "sst": "daily",
+      "sss": "monthly",
+      "sla": "along_track",
+      "current_u": "weekly",
+      "current_v": "weekly",
+      "wind_u": "hourly",
+      "wind_v": "hourly",
+      "thetao": "daily"
+    }
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8000
+  },
+  "phase3": {
+    "epochs": 3,
+    "lr": 0.001,
+    "batch_size": 4,
+    "patience": 3,
+    "resume": false,
+    "embed_dim": 32,
+    "mc_samples": 5,
+    "loss_weights": {
+      "mse": 1.0,
+      "grad": 0.1,
+      "smooth": 0.05,
+      "therm": 0.0
+    }
+  }
+}

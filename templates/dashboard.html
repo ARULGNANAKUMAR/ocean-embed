@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Prediction Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/earth">Digital Twin</a>
+    <a href="/gismap">GIS Map</a>
+    <a href="/dashboard" class="active">Dashboard</a>
+    <a href="/heatwave">Heatwave</a>
+    <a href="/voice">Voice AI</a>
+    <a href="/about">About</a>
+    <a href="/admin" data-admin-only>Admin</a>
+    <a href="#" data-auth-logout style="color:var(--accent-danger)">Logout</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+
+<div class="dashboard-shell">
+  <aside class="glass-sidebar">
+    <div class="sidebar-nav-item active"><span class="icon-dot"></span> Prediction Overview</div>
+    <div class="sidebar-nav-item" onclick="document.getElementById('sec-forecast').scrollIntoView({behavior:'smooth'})"><span class="icon-dot"></span> Future Forecast</div>
+    <div class="sidebar-nav-item" onclick="document.getElementById('sec-argo').scrollIntoView({behavior:'smooth'})"><span class="icon-dot"></span> ARGO Validation</div>
+    <div class="sidebar-nav-item" onclick="document.getElementById('sec-analytics').scrollIntoView({behavior:'smooth'})"><span class="icon-dot"></span> Ocean Analytics</div>
+    <a class="sidebar-nav-item" href="/prediction"><span class="icon-dot"></span> Time-Slider Prediction</a>
+    <a class="sidebar-nav-item" href="/heatwave"><span class="icon-dot"></span> Heatwave Center</a>
+  </aside>
+
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <h1>AI Prediction Dashboard</h1>
+      <div class="badge badge-low">MODEL ACTIVE</div>
+    </div>
+
+    <div class="widget-grid cols-4">
+      <div class="glass-card"><div class="card-title">Current SST</div><div class="card-value" id="widget-sst">—</div></div>
+      <div class="glass-card"><div class="card-title">Peak Prediction</div><div class="card-value" id="widget-prediction">—</div></div>
+      <div class="glass-card"><div class="card-title">Confidence</div><div class="card-value" id="widget-confidence">—</div></div>
+      <div class="glass-card"><div class="card-title">Heatwave Zones</div><div class="card-value" id="widget-heatwave-count">—</div></div>
+    </div>
+
+    <div class="widget-grid cols-3">
+      <div class="glass-card">
+        <div class="card-title">Heatwave Alert Level</div>
+        <div class="card-value" id="widget-heatwave-alert">—</div>
+      </div>
+      <div class="glass-card">
+        <div class="card-title">Ocean Health Score</div>
+        <div class="card-value" id="ocean-health-score">—</div>
+      </div>
+      <div class="glass-card">
+        <div class="card-title">Ocean Summary</div>
+        <div id="ocean-state-summary" style="font-size:0.78rem;margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="glass-card chart-panel" style="margin-bottom:24px">
+      <div class="card-title">15-Depth Temperature Profile</div>
+      <canvas id="depth-temp-chart" height="260"></canvas>
+    </div>
+
+    <div id="sec-forecast" class="glass-card" style="margin-bottom:24px;padding:20px">
+      <div class="card-title">Forecast Cards</div>
+      <div class="forecast-row" id="forecast-row"></div>
+    </div>
+
+    <div id="sec-argo" style="margin-bottom:24px">
+      <div class="card-title" style="margin-bottom:12px">ARGO Validation</div>
+      <div id="argo-validation-panel"></div>
+      <div class="glass-card chart-panel" style="margin-top:14px">
+        <div class="card-title">RMSE vs Depth</div>
+        <canvas id="depth-rmse-chart" height="220"></canvas>
+      </div>
+    </div>
+
+    <div id="sec-analytics" class="widget-grid cols-3">
+      <div class="glass-card chart-panel">
+        <div class="card-title">Feature Importance</div>
+        <canvas id="feature-importance-chart" height="220"></canvas>
+      </div>
+      <div class="glass-card" style="grid-column: span 2; padding:20px">
+        <div class="card-title">Variable Correlation Matrix</div>
+        <div id="correlation-matrix-container" style="overflow-x:auto;margin-top:10px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/auth-guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/argo.js') }}"></script>
+</body>
+</html>

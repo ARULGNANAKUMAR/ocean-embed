@@ -1,0 +1,40 @@
+{% macro glass_nav(active='') %}
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/" {% if active=='home' %}class="active"{% endif %}>Home</a>
+    <a href="/earth" {% if active=='earth' %}class="active"{% endif %}>Digital Twin</a>
+    <a href="/gismap" {% if active=='gismap' %}class="active"{% endif %}>GIS Map</a>
+    <a href="/dashboard" {% if active=='dashboard' %}class="active"{% endif %}>Dashboard</a>
+    <a href="/heatwave" {% if active=='heatwave' %}class="active"{% endif %}>Heatwave</a>
+    <a href="/voice" {% if active=='voice' %}class="active"{% endif %}>Voice AI</a>
+    <a href="/admin" {% if active=='admin' %}class="active"{% endif %}>Admin</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+{% endmacro %}
+
+{% macro platform_sidebar(active='') %}
+<aside class="glass-sidebar">
+  <div style="padding:16px 14px 8px;font-size:0.6rem;letter-spacing:0.12em;color:var(--text-dim2);text-transform:uppercase">Platform</div>
+  <a class="sidebar-nav-item {% if active=='dashboard' %}active{% endif %}" href="/dashboard"><span class="icon-dot"></span> Dashboard</a>
+  <a class="sidebar-nav-item {% if active=='earth' %}active{% endif %}" href="/earth"><span class="icon-dot"></span> 3D Digital Twin</a>
+  <a class="sidebar-nav-item {% if active=='gismap' %}active{% endif %}" href="/gismap"><span class="icon-dot"></span> Real GIS Map</a>
+  <a class="sidebar-nav-item {% if active=='heatwave' %}active{% endif %}" href="/heatwave"><span class="icon-dot"></span> Heatwave Center</a>
+  <a class="sidebar-nav-item {% if active=='voice' %}active{% endif %}" href="/voice"><span class="icon-dot"></span> Voice Assistant</a>
+
+  <div style="padding:14px 14px 6px;font-size:0.6rem;letter-spacing:0.12em;color:var(--text-dim2);text-transform:uppercase;margin-top:6px">Management</div>
+  <a class="sidebar-nav-item {% if active=='settings' %}active{% endif %}" href="/settings"><span class="icon-dot"></span> Settings</a>
+  <a class="sidebar-nav-item {% if active=='profile' %}active{% endif %}" href="/profile"><span class="icon-dot"></span> Profile</a>
+  <a class="sidebar-nav-item {% if active=='downloads' %}active{% endif %}" href="/downloads"><span class="icon-dot"></span> Downloads</a>
+  <a class="sidebar-nav-item {% if active=='activity' %}active{% endif %}" href="/activity"><span class="icon-dot"></span> Activity</a>
+  <a class="sidebar-nav-item {% if active=='reports' %}active{% endif %}" href="/reports"><span class="icon-dot"></span> Reports</a>
+
+  <div style="padding:14px 14px 6px;font-size:0.6rem;letter-spacing:0.12em;color:var(--text-dim2);text-transform:uppercase;margin-top:6px">Admin</div>
+  <a class="sidebar-nav-item {% if active=='model_registry' %}active{% endif %}" href="/model-registry"><span class="icon-dot"></span> Model Registry</a>
+  <a class="sidebar-nav-item {% if active=='database' %}active{% endif %}" href="/database"><span class="icon-dot"></span> Database Health</a>
+  <a class="sidebar-nav-item {% if active=='training' %}active{% endif %}" href="/training"><span class="icon-dot"></span> Training Monitor</a>
+  <a class="sidebar-nav-item {% if active=='api_management' %}active{% endif %}" href="/api-management"><span class="icon-dot"></span> API Management</a>
+  <a class="sidebar-nav-item {% if active=='admin' %}active{% endif %}" href="/admin"><span class="icon-dot"></span> Admin Panel</a>
+</aside>
+{% endmacro %}

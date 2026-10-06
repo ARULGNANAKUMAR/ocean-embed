@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Login — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+.login-card { width:min(400px,100%); padding:36px; }
+.login-logo { text-align:center; margin-bottom:28px; }
+.login-logo .logo-icon { font-size:2.4rem; display:block; margin-bottom:10px; }
+.login-logo h1 { font-family:var(--font-display); font-size:1.1rem; color:var(--cyan); letter-spacing:0.12em; }
+.login-logo p { font-size:0.78rem; color:var(--text-dim2); margin-top:4px; }
+.form-field { margin-bottom:16px; }
+.form-field label { display:block; font-size:0.72rem; color:var(--text-secondary); margin-bottom:6px; letter-spacing:0.06em; text-transform:uppercase; }
+.form-field input { width:100%; padding:11px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-primary); font-size:0.88rem; transition:border-color 180ms; }
+.form-field input:focus { outline:none; border-color:var(--cyan); box-shadow:0 0 0 2px rgba(34,229,255,0.12); }
+.login-roles { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.role-chip { padding:4px 10px; border-radius:999px; border:1px solid rgba(34,229,255,0.2); font-size:0.68rem; color:var(--text-dim2); cursor:pointer; transition:all 180ms; }
+.role-chip:hover { border-color:var(--cyan); color:var(--cyan); }
+.login-divider { text-align:center; color:var(--text-dim2); font-size:0.72rem; margin:14px 0; }
+.auth-tabs { display:flex; gap:6px; margin-bottom:18px; }
+.auth-tab { flex:1; text-align:center; padding:8px; border-radius:8px; font-size:0.76rem; letter-spacing:0.04em; cursor:pointer; border:1px solid var(--glass-border); color:var(--text-dim2); transition:all 180ms; }
+.auth-tab.active { border-color:var(--cyan); color:var(--cyan); background:rgba(34,229,255,0.06); }
+.auth-panel { display:none; }
+.auth-panel.active { display:block; }
+.auth-note { font-size:0.72rem; color:var(--text-dim2); margin-top:10px; line-height:1.5; }
+.auth-link { color:var(--cyan); cursor:pointer; text-decoration:underline; }
+.auth-status-banner { font-size:0.76rem; padding:8px 12px; border-radius:6px; margin-bottom:12px; }
+.auth-status-banner.warn { color:#ffb020; background:rgba(255,176,32,0.08); border:1px solid rgba(255,176,32,0.2); }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a><a href="/earth">Digital Twin</a><a href="/gismap">GIS Map</a>
+    <a href="/dashboard">Dashboard</a><a href="/admin">Admin</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+
+<div class="app-shell login-wrap">
+  <div class="glass-card animated-border login-card">
+    <div class="login-logo">
+      <span class="login-logo .logo-icon">🌊</span>
+      <h1>OCEANVERSE AI</h1>
+      <p>Researcher Login · Firebase-Secured Access</p>
+    </div>
+
+    <div id="login-error" style="display:none;color:var(--accent-danger);font-size:0.78rem;margin-bottom:12px;padding:8px 12px;background:rgba(255,59,92,0.08);border-radius:6px;border:1px solid rgba(255,59,92,0.2)"></div>
+    <div id="login-info" style="display:none;color:var(--cyan);font-size:0.78rem;margin-bottom:12px;padding:8px 12px;background:rgba(34,229,255,0.06);border-radius:6px;border:1px solid rgba(34,229,255,0.2)"></div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" data-tab="signin" onclick="switchTab('signin')">Sign In</div>
+      <div class="auth-tab" data-tab="register" onclick="switchTab('register')">Create Account</div>
+    </div>
+
+    <!-- SIGN IN -->
+    <div class="auth-panel active" id="panel-signin">
+      <div class="form-field">
+        <label>Email</label>
+        <input type="email" id="signin-email" placeholder="you@example.com" autocomplete="username"/>
+      </div>
+      <div class="form-field">
+        <label>Password</label>
+        <input type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <button class="btn-neon btn-primary w-full" id="signin-btn" onclick="doSignIn()">Sign In →</button>
+      <p class="auth-note" style="text-align:center;">
+        <span class="auth-link" onclick="switchTab('reset')">Forgot password?</span>
+      </p>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="auth-panel" id="panel-register">
+      <div class="form-field">
+        <label>Display Name</label>
+        <input type="text" id="register-name" placeholder="Your name" autocomplete="name"/>
+      </div>
+      <div class="form-field">
+        <label>Email</label>
+        <input type="email" id="register-email" placeholder="you@example.com" autocomplete="username"/>
+      </div>
+      <div class="form-field">
+        <label>Password</label>
+        <input type="password" id="register-password" placeholder="At least 8 characters" autocomplete="new-password"/>
+      </div>
+      <button class="btn-neon btn-primary w-full" id="register-btn" onclick="doRegister()">Create Account →</button>
+      <p class="auth-note">A verification email will be sent to your address. New accounts start with standard (non-admin) access.</p>
+    </div>
+
+    <!-- RESET -->
+    <div class="auth-panel" id="panel-reset">
+      <div class="form-field">
+        <label>Email</label>
+        <input type="email" id="reset-email" placeholder="you@example.com" autocomplete="username"/>
+      </div>
+      <button class="btn-neon btn-primary w-full" id="reset-btn" onclick="doReset()">Send Reset Link →</button>
+      <p class="auth-note" style="text-align:center;"><span class="auth-link" onclick="switchTab('signin')">← Back to Sign In</span></p>
+    </div>
+
+    <p style="text-align:center;margin-top:18px;font-size:0.72rem;color:var(--text-dim2)">
+      <a href="/" style="color:var(--cyan)">← Return Home</a>
+    </p>
+  </div>
+</div>
+
+<div id="toast-stack"></div>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const errEl = document.getElementById('login-error');
+const infoEl = document.getElementById('login-info');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; infoEl.style.display = 'none'; }
+function showInfo(msg) { infoEl.textContent = msg; infoEl.style.display = 'block'; errEl.style.display = 'none'; }
+function clearMsgs() { errEl.style.display = 'none'; infoEl.style.display = 'none'; }
+
+window.switchTab = function(tab) {
+  clearMsgs();
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+};
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/invalid-email': 'Invalid email or password.',
+    'auth/user-not-found': 'Invalid email or password.',
+    'auth/wrong-password': 'Invalid email or password.',
+    'auth/invalid-credential': 'Invalid email or password.',
+    'auth/email-already-in-use': 'An account with this email already exists.',
+    'auth/weak-password': 'Password should be at least 8 characters.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+let app, auth;
+(async function initFirebase() {
+  try {
+    const res = await fetch('/api/firebase-config');
+    const cfg = await res.json();
+    if (!cfg.apiKey) {
+      showErr('Firebase is not configured on the server yet. An administrator needs to set the FIREBASE_* variables in .env.');
+      document.querySelectorAll('button').forEach(b => b.disabled = true);
+      return;
+    }
+    app = initializeApp(cfg);
+    auth = getAuth(app);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user && user.emailVerified) {
+        // Already signed in with a verified email -> exchange for a
+        // server session and redirect to the right dashboard.
+        await exchangeSession(user, false);
+      }
+    });
+  } catch (e) {
+    showErr('Could not reach the authentication service.');
+  }
+})();
+
+async function exchangeSession(user, showToast) {
+  const idToken = await user.getIdToken();
+  const res = await fetch('/api/auth/firebase-session', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ idToken })
+  });
+  const data = await res.json();
+  if (!res.ok) { showErr(data.error || 'Session expired. Please sign in again.'); return; }
+  if (showToast && window.OceanApp) OceanApp.toast(`Welcome, ${data.user.display_name || data.user.email}!`, 'success');
+  setTimeout(() => { window.location.href = data.user.role === 'admin' ? '/admin' : '/dashboard'; }, showToast ? 700 : 0);
+}
+
+window.doSignIn = async function() {
+  clearMsgs();
+  const btn = document.getElementById('signin-btn');
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) { showErr('Please enter email and password.'); return; }
+  btn.textContent = 'Authenticating…'; btn.disabled = true;
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    if (!cred.user.emailVerified) {
+      showErr('Please verify your email before continuing. Check your inbox for the verification link.');
+      btn.textContent = 'Sign In →'; btn.disabled = false;
+      return;
+    }
+    await exchangeSession(cred.user, true);
+  } catch (e) {
+    showErr(friendlyAuthError(e.code));
+    btn.textContent = 'Sign In →'; btn.disabled = false;
+  }
+};
+
+window.doRegister = async function() {
+  clearMsgs();
+  const btn = document.getElementById('register-btn');
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  if (!email || !password) { showErr('Please enter email and password.'); return; }
+  if (password.length < 8) { showErr('Password should be at least 8 characters.'); return; }
+  btn.textContent = 'Creating account…'; btn.disabled = true;
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(cred.user);
+    await signOut(auth);
+    showInfo('Account created! We sent a verification link to ' + email + '. Verify your email, then sign in.');
+    switchTab('signin');
+  } catch (e) {
+    showErr(friendlyAuthError(e.code));
+  } finally {
+    btn.textContent = 'Create Account →'; btn.disabled = false;
+  }
+};
+
+window.doReset = async function() {
+  clearMsgs();
+  const btn = document.getElementById('reset-btn');
+  const email = document.getElementById('reset-email').value.trim();
+  if (!email) { showErr('Please enter your email.'); return; }
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showInfo('If an account exists for ' + email + ', a password reset link has been sent.');
+  } catch (e) {
+    // Do not reveal whether the account exists.
+    showInfo('If an account exists for ' + email + ', a password reset link has been sent.');
+  } finally {
+    btn.textContent = 'Send Reset Link →'; btn.disabled = false;
+  }
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const active = document.querySelector('.auth-panel.active');
+  if (!active) return;
+  if (active.id === 'panel-signin') doSignIn();
+  else if (active.id === 'panel-register') doRegister();
+  else if (active.id === 'panel-reset') doReset();
+});
+</script>
+</body>
+</html>

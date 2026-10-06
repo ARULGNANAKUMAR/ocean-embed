@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Settings — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.settings-section { margin-bottom:28px; }
+.settings-section-title { font-family:var(--font-display); font-size:0.7rem; letter-spacing:0.12em; color:var(--cyan); text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.settings-section-title::after { content:''; flex:1; height:1px; background:rgba(34,229,255,0.12); }
+.setting-row { display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid rgba(34,229,255,0.06); }
+.setting-row:last-child { border-bottom:none; }
+.setting-label { font-size:0.84rem; color:var(--text-primary); font-weight:500; }
+.setting-desc { font-size:0.72rem; color:var(--text-dim2); margin-top:2px; }
+.setting-control { flex-shrink:0; margin-left:20px; }
+select.glass-select { background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-primary); padding:7px 12px; font-size:0.82rem; font-family:var(--font-body); cursor:pointer; }
+select.glass-select:focus { outline:none; border-color:var(--cyan); }
+/* Toggle switch */
+.toggle-wrap { position:relative; display:inline-block; width:42px; height:22px; }
+.toggle-wrap input { opacity:0; width:0; height:0; }
+.toggle-slider { position:absolute; inset:0; background:rgba(255,255,255,0.1); border-radius:22px; cursor:pointer; transition:background 200ms; border:1px solid rgba(34,229,255,0.2); }
+.toggle-slider::before { content:''; position:absolute; left:3px; top:3px; width:14px; height:14px; border-radius:50%; background:rgba(157,180,204,0.6); transition:transform 200ms, background 200ms; }
+.toggle-wrap input:checked + .toggle-slider { background:rgba(34,229,255,0.2); border-color:var(--cyan); }
+.toggle-wrap input:checked + .toggle-slider::before { transform:translateX(20px); background:var(--cyan); box-shadow:0 0 8px var(--cyan); }
+.slider-row { display:flex; align-items:center; gap:10px; }
+.slider-row input[type=range] { width:120px; -webkit-appearance:none; height:3px; background:rgba(34,229,255,0.2); border-radius:2px; }
+.slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--cyan); box-shadow:0 0 6px var(--cyan); cursor:pointer; }
+.slider-row .slider-val { font-family:var(--font-display); font-size:0.72rem; color:var(--cyan); min-width:30px; }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a><a href="/earth">Digital Twin</a><a href="/gismap">GIS Map</a>
+    <a href="/dashboard">Dashboard</a><a href="/heatwave">Heatwave</a>
+    <a href="/settings" class="active">Settings</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('settings') }}
+
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div>
+        <h1 class="section-title">Platform Settings</h1>
+        <p class="section-sub">Customise your OceanVerse experience</p>
+      </div>
+      <button class="btn-neon btn-primary" id="save-btn" onclick="saveSettings()">Save Changes</button>
+    </div>
+
+    <div style="max-width:700px">
+
+      <!-- Appearance -->
+      <div class="glass-card settings-section">
+        <div class="settings-section-title">Appearance</div>
+
+        <div class="setting-row">
+          <div><div class="setting-label">Theme</div><div class="setting-desc">Visual theme of the platform</div></div>
+          <div class="setting-control">
+            <select class="glass-select" id="s-theme">
+              <option value="ocean_dark">Ocean Dark</option>
+              <option value="deep_sea">Deep Sea</option>
+              <option value="arctic">Arctic Blue</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div><div class="setting-label">Language</div><div class="setting-desc">Interface language</div></div>
+          <div class="setting-control">
+            <select class="glass-select" id="s-language">
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="ta">Tamil</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div><div class="setting-label">Animation Speed</div><div class="setting-desc">Controls globe and particle speed</div></div>
+          <div class="setting-control slider-row">
+            <input type="range" id="s-animation-speed-raw" min="0" max="2" step="1" value="1"
+              oninput="document.getElementById('anim-val').textContent=['Slow','Normal','Fast'][this.value];document.getElementById('s-animation-speed').value=['slow','normal','fast'][this.value]">
+            <input type="hidden" id="s-animation-speed" value="normal">
+            <span class="slider-val" id="anim-val">Normal</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div><div class="setting-label">Ocean Opacity</div><div class="setting-desc">Heatmap layer transparency</div></div>
+          <div class="setting-control slider-row">
+            <input type="range" id="s-ocean-opacity-raw" min="0" max="10" step="1" value="7"
+              oninput="document.getElementById('op-val').textContent=(this.value*10)+'%';document.getElementById('s-ocean-opacity').value=(this.value/10).toFixed(1)">
+            <input type="hidden" id="s-ocean-opacity" value="0.7">
+            <span class="slider-val" id="op-val">70%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Units -->
+      <div class="glass-card settings-section">
+        <div class="settings-section-title">Units & Measurements</div>
+        <div class="setting-row">
+          <div><div class="setting-label">Temperature Unit</div><div class="setting-desc">Display temperature in</div></div>
+          <div class="setting-control">
+            <select class="glass-select" id="s-temp-unit">
+              <option value="celsius">Celsius (°C)</option>
+              <option value="fahrenheit">Fahrenheit (°F)</option>
+              <option value="kelvin">Kelvin (K)</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Wind Speed Unit</div><div class="setting-desc">Display wind in</div></div>
+          <div class="setting-control">
+            <select class="glass-select" id="s-wind-unit">
+              <option value="ms">m/s</option>
+              <option value="kmh">km/h</option>
+              <option value="knots">Knots</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Map Style</div><div class="setting-desc">Default basemap on GIS Map</div></div>
+          <div class="setting-control">
+            <select class="glass-select" id="s-map-style">
+              <option value="ocean">Ocean</option>
+              <option value="satellite">Satellite</option>
+              <option value="topo">Terrain</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Behaviour -->
+      <div class="glass-card settings-section">
+        <div class="settings-section-title">Behaviour</div>
+        <div class="setting-row">
+          <div><div class="setting-label">Notifications</div><div class="setting-desc">Show live toast notifications</div></div>
+          <div class="setting-control">
+            <label class="toggle-wrap"><input type="checkbox" id="s-notifications" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Sound Effects</div><div class="setting-desc">Audio alerts for heatwave events</div></div>
+          <div class="setting-control">
+            <label class="toggle-wrap"><input type="checkbox" id="s-sound"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Auto Refresh</div><div class="setting-desc">Auto-reload prediction data every 60s</div></div>
+          <div class="setting-control">
+            <label class="toggle-wrap"><input type="checkbox" id="s-auto-refresh" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Grid Overlay</div><div class="setting-desc">Show lat/lon grid on 3D Earth</div></div>
+          <div class="setting-control">
+            <label class="toggle-wrap"><input type="checkbox" id="s-grid-visible" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /max-width -->
+  </main>
+</div>
+
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+async function loadSettings() {
+  try {
+    const d = await OceanApp.api('/api/settings');
+    const s = d.settings;
+    ['theme','language','temp_unit','wind_unit','map_style'].forEach(k => {
+      const el = document.getElementById('s-'+k);
+      if(el && s[k]) el.value = s[k];
+    });
+    document.getElementById('s-notifications').checked = s.notifications!=='false';
+    document.getElementById('s-sound').checked = s.sound==='true';
+    document.getElementById('s-auto-refresh').checked = s.auto_refresh!=='false';
+    document.getElementById('s-grid-visible').checked = s.grid_visible!=='false';
+    // sliders
+    const spd = {'slow':0,'normal':1,'fast':2}[s.animation_speed||'normal']||1;
+    document.getElementById('s-animation-speed-raw').value = spd;
+    document.getElementById('anim-val').textContent = ['Slow','Normal','Fast'][spd];
+    document.getElementById('s-animation-speed').value = s.animation_speed||'normal';
+    const op = Math.round(parseFloat(s.ocean_opacity||'0.7')*10);
+    document.getElementById('s-ocean-opacity-raw').value = op;
+    document.getElementById('op-val').textContent = (op*10)+'%';
+    document.getElementById('s-ocean-opacity').value = (op/10).toFixed(1);
+  } catch(e){}
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('save-btn');
+  btn.textContent='Saving…'; btn.disabled=true;
+  const payload = {
+    theme: document.getElementById('s-theme').value,
+    language: document.getElementById('s-language').value,
+    temp_unit: document.getElementById('s-temp-unit').value,
+    wind_unit: document.getElementById('s-wind-unit').value,
+    map_style: document.getElementById('s-map-style').value,
+    animation_speed: document.getElementById('s-animation-speed').value,
+    ocean_opacity: document.getElementById('s-ocean-opacity').value,
+    notifications: document.getElementById('s-notifications').checked ? 'true':'false',
+    sound: document.getElementById('s-sound').checked ? 'true':'false',
+    auto_refresh: document.getElementById('s-auto-refresh').checked ? 'true':'false',
+    grid_visible: document.getElementById('s-grid-visible').checked ? 'true':'false',
+  };
+  try {
+    await OceanApp.api('/api/settings', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    OceanApp.toast('Settings saved successfully','success');
+  } catch(e){ OceanApp.toast('Save failed','error'); }
+  btn.textContent='Save Changes'; btn.disabled=false;
+}
+
+loadSettings();
+</script>
+</body>
+</html>

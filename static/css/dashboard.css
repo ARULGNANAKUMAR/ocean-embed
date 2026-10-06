@@ -1,0 +1,231 @@
+/* ═══════════════════════════════════════════════════════════
+   dashboard.css — Dashboard grids, widgets, admin/user layouts
+   ═══════════════════════════════════════════════════════════ */
+
+.dashboard-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  padding-top: 64px;
+}
+
+.dashboard-main {
+  padding: 28px 32px 60px;
+  overflow-x: hidden;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 26px;
+}
+
+.dashboard-header h1 {
+  font-size: 1.4rem;
+}
+
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.widget-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.widget-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 1100px) {
+  .widget-grid.cols-3, .widget-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .widget-grid.cols-3, .widget-grid.cols-4 { grid-template-columns: 1fr; }
+  .dashboard-shell { grid-template-columns: 1fr; }
+}
+
+/* ── Sidebar nav ── */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.sidebar-nav-item:hover, .sidebar-nav-item.active {
+  background: rgba(34,229,255,0.08);
+  color: var(--cyan);
+}
+.sidebar-nav-item .icon-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── Chart container ── */
+.chart-panel {
+  padding: 20px;
+  min-height: 280px;
+}
+.chart-panel canvas { max-height: 260px; }
+
+/* ── Forecast cards row ── */
+.forecast-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.forecast-card {
+  min-width: 140px;
+  padding: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.forecast-card .fc-day {
+  font-size: 0.7rem;
+  color: var(--text-dim2);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.forecast-card .fc-temp {
+  font-size: 1.6rem;
+  color: var(--cyan);
+  font-weight: 700;
+}
+.forecast-card .fc-conf {
+  margin-top: 6px;
+  font-size: 0.68rem;
+  color: var(--text-dim2);
+}
+
+/* ── Heatwave hotspot list ── */
+.hotspot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  margin-bottom: 8px;
+  border-left: 3px solid transparent;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.hotspot-row:hover { background: rgba(34,229,255,0.05); }
+.hotspot-row.sev-LOW     { border-left-color: #7ee787; }
+.hotspot-row.sev-MEDIUM  { border-left-color: var(--accent-warn); }
+.hotspot-row.sev-HIGH    { border-left-color: var(--accent-danger); }
+.hotspot-row.sev-EXTREME { border-left-color: var(--accent-extreme); }
+
+/* ── Impact cards ── */
+.impact-card {
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.impact-card .impact-title {
+  font-size: 0.95rem;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+.impact-card .impact-severity-bar {
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  margin: 8px 0;
+  overflow: hidden;
+}
+.impact-card .impact-severity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-warn), var(--accent-danger));
+}
+.impact-card .impact-reason {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.impact-card .impact-action {
+  font-size: 0.76rem;
+  color: var(--accent-success);
+}
+
+/* ── Table (Admin logs, history) ── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.data-table th {
+  text-align: left;
+  padding: 10px 12px;
+  color: var(--text-dim2);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+}
+.data-table tr:hover td { background: rgba(34,229,255,0.03); }
+
+/* ── Upload zone ── */
+.upload-zone {
+  border: 2px dashed rgba(34,229,255,0.3);
+  border-radius: var(--radius-lg);
+  padding: 40px 20px;
+  text-align: center;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--cyan);
+  background: rgba(34,229,255,0.04);
+}
+.upload-zone input[type=file] { display: none; }
+
+/* ── Progress bar (training) ── */
+.progress-bar-track {
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ocean-blue), var(--cyan));
+  box-shadow: 0 0 10px var(--cyan-glow);
+  transition: width 400ms ease;
+}
+
+/* ── Settings page toggle list ── */
+.settings-group {
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row .settings-label { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* ── Theme swatch selector ── */
+.theme-swatch {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+.theme-swatch.active { border-color: #fff; }

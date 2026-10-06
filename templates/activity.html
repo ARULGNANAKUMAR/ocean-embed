@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Activity Timeline — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+.timeline { position:relative; padding-left:28px; }
+.timeline::before { content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:rgba(34,229,255,0.15); }
+.tl-item { position:relative; margin-bottom:16px; }
+.tl-dot { position:absolute; left:-24px; top:6px; width:10px; height:10px; border-radius:50%; background:var(--cyan); box-shadow:0 0 8px var(--cyan); border:2px solid rgba(5,14,26,1); }
+.tl-card { background:rgba(255,255,255,0.03); border:1px solid rgba(34,229,255,0.1); border-radius:10px; padding:11px 14px; transition:border-color 180ms; }
+.tl-card:hover { border-color:rgba(34,229,255,0.3); }
+.tl-type { font-size:0.65rem; color:var(--cyan); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:3px; }
+.tl-detail { font-size:0.82rem; color:var(--text-primary); }
+.tl-time { font-size:0.68rem; color:var(--text-dim2); margin-top:4px; }
+.filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.filter-btn { padding:5px 12px; border-radius:999px; border:1px solid rgba(34,229,255,0.2); background:transparent; color:var(--text-secondary); font-size:0.72rem; cursor:pointer; transition:all 180ms; font-family:var(--font-body); text-transform:uppercase; letter-spacing:0.04em; }
+.filter-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(34,229,255,0.08); }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/dashboard">Dashboard</a><a href="/activity" class="active">Activity</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('activity') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">Activity Timeline</h1><p class="section-sub">Platform events, uploads, predictions and detections</p></div>
+      <button class="btn-neon" onclick="loadActivity()">↻ Refresh</button>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterBy('all',this)">All</button>
+      <button class="filter-btn" onclick="filterBy('login',this)">Login</button>
+      <button class="filter-btn" onclick="filterBy('dataset',this)">Dataset</button>
+      <button class="filter-btn" onclick="filterBy('model',this)">Model</button>
+      <button class="filter-btn" onclick="filterBy('settings',this)">Settings</button>
+      <button class="filter-btn" onclick="filterBy('scheduler',this)">Scheduler</button>
+    </div>
+
+    <div class="widget-grid cols-4" style="margin-bottom:22px">
+      <div class="stat-card"><div class="stat-value" id="act-total">—</div><div class="stat-label">Total Events</div></div>
+      <div class="stat-card"><div class="stat-value" id="act-today">—</div><div class="stat-label">Today</div></div>
+      <div class="stat-card"><div class="stat-value" id="act-users">—</div><div class="stat-label">Active Users</div></div>
+      <div class="stat-card"><div class="stat-value" id="act-types">—</div><div class="stat-label">Event Types</div></div>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-title">Event Timeline</div>
+      <div id="timeline" class="timeline" style="margin-top:16px;max-height:600px;overflow-y:auto;padding-right:8px">
+        <div class="skeleton" style="height:60px;border-radius:10px;margin-bottom:12px"></div>
+        <div class="skeleton" style="height:60px;border-radius:10px;margin-bottom:12px"></div>
+        <div class="skeleton" style="height:60px;border-radius:10px;margin-bottom:12px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+let allEvents=[], activeFilter='all';
+const ICONS={'login':'🔑','logout':'🚪','settings_save':'⚙️','add_favorite':'📍','dataset_register':'📦','model_register':'🤖','model_activate':'✅','scheduler_run':'⚡','default':'📌'};
+
+async function loadActivity(){
+  try {
+    const d = await OceanApp.api('/api/activity?limit=200');
+    allEvents = d.activity||[];
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('act-total').textContent = allEvents.length;
+    document.getElementById('act-today').textContent = allEvents.filter(e=>e.created_at&&e.created_at.startsWith(today)).length;
+    const users=new Set(allEvents.filter(e=>e.user_id).map(e=>e.user_id));
+    document.getElementById('act-users').textContent = users.size;
+    const types=new Set(allEvents.map(e=>e.event_type));
+    document.getElementById('act-types').textContent = types.size;
+    renderTimeline();
+  } catch(e){ OceanApp.toast('Failed to load activity','error'); }
+}
+
+function filterBy(type, btn){
+  activeFilter=type;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTimeline();
+}
+
+function renderTimeline(){
+  const filtered = activeFilter==='all' ? allEvents : allEvents.filter(e=>e.event_type&&e.event_type.includes(activeFilter));
+  const tl=document.getElementById('timeline');
+  if(!filtered.length){ tl.innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem">No events found.</p>'; return; }
+  tl.innerHTML = filtered.slice(0,100).map(e=>{
+    const icon=ICONS[e.event_type]||ICONS.default;
+    const time=(e.created_at||'').replace('T',' ').slice(0,19);
+    const user=e.username?` · @${e.username}`:'';
+    return `<div class="tl-item"><div class="tl-dot"></div><div class="tl-card"><div class="tl-type">${icon} ${e.event_type||'event'}</div><div class="tl-detail">${e.detail||'—'}</div><div class="tl-time">${time}${user}</div></div></div>`;
+  }).join('');
+}
+loadActivity();
+</script>
+</body>
+</html>

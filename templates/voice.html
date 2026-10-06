@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voice Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+<style>
+  .voice-page-wrap {
+    max-width: 720px; margin: 0 auto; padding: 110px 20px 60px;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  #mic-button {
+    position: relative;
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle, rgba(34,229,255,0.25), rgba(10,132,255,0.08));
+    border: 2px solid var(--cyan);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: transform 200ms ease;
+  }
+  #mic-button:hover { transform: scale(1.05); }
+  #voice-response {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 0 20px;
+    min-height: 200px;
+  }
+  .voice-bubble-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, rgba(10,132,255,0.3), rgba(34,229,255,0.15));
+    padding: 10px 16px; border-radius: 14px 14px 2px 14px;
+    max-width: 75%;
+  }
+  .voice-bubble-assistant {
+    align-self: flex-start;
+    max-width: 85%;
+    padding: 14px 16px;
+    border-radius: 14px 14px 14px 2px;
+  }
+  #voice-query-form { display: flex; gap: 10px; margin-top: 10px; }
+  #voice-query-input {
+    flex: 1; padding: 14px 18px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+  .voice-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .voice-example-chip {
+    padding: 7px 14px; border-radius: 999px; font-size: 0.75rem;
+    background: rgba(34,229,255,0.06); border: 1px solid var(--glass-border);
+    color: var(--text-secondary); cursor: pointer; transition: all 180ms;
+  }
+  .voice-example-chip:hover { color: var(--cyan); border-color: var(--cyan); }
+  #voice-nav-hint { margin-top: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/earth">Digital Twin</a>
+    <a href="/gismap">GIS Map</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/heatwave">Heatwave</a>
+    <a href="/voice" class="active">Voice AI</a>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+
+<div class="voice-page-wrap">
+  <div class="text-center" style="margin-bottom:10px">
+    <div id="mic-button" class="float-bob">
+      🎙️
+      <span class="mic-pulse-ring"></span>
+    </div>
+    <h1 style="font-size:1.3rem">Ocean AI Voice Assistant</h1>
+    <p style="color:var(--text-dim2);font-size:0.82rem;margin-top:6px">Ask about ocean conditions, predictions, or heatwaves</p>
+  </div>
+
+  <div class="voice-examples">
+    <span class="voice-example-chip">Show Bay of Bengal at 100m</span>
+    <span class="voice-example-chip">Predict heatwave near Chennai</span>
+    <span class="voice-example-chip">Show ARGO near Sri Lanka</span>
+    <span class="voice-example-chip">Compare today and next week</span>
+  </div>
+
+  <div id="voice-response" class="glass-card" style="padding:16px"></div>
+
+  <form id="voice-query-form">
+    <input type="text" id="voice-query-input" placeholder="Type your ocean query…" autocomplete="off" />
+    <button type="submit" class="btn-neon btn-primary">Send</button>
+  </form>
+  <div id="voice-nav-hint"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+</body>
+</html>

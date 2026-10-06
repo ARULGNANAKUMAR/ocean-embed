@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Profile — OceanVerse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links"><a href="/">Home</a><a href="/earth">Digital Twin</a><a href="/dashboard">Dashboard</a><a href="/profile" class="active">Profile</a></div>
+  <div style="font-size:0.75rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+<div class="dashboard-shell">
+  {% from 'macros.html' import platform_sidebar %}
+  {{ platform_sidebar('profile') }}
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <div><h1 class="section-title">User Profile</h1><p class="section-sub">Your account, saved locations and activity</p></div>
+    </div>
+    <div class="widget-grid cols-3">
+      <!-- Profile card -->
+      <div class="glass-card" style="grid-column:1/2">
+        <div class="card-title">Account</div>
+        <div style="text-align:center;padding:20px 0">
+          <div id="avatar" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--ocean-blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 14px;box-shadow:0 0 24px rgba(34,229,255,0.3)">🌊</div>
+          <div id="prof-name" class="section-title" style="font-size:1rem">—</div>
+          <div id="prof-role" class="badge badge-low" style="margin-top:6px">—</div>
+          <div id="prof-email" style="font-size:0.75rem;color:var(--text-dim2);margin-top:8px">—</div>
+          <div id="prof-joined" style="font-size:0.7rem;color:var(--text-dim2);margin-top:4px">—</div>
+        </div>
+      </div>
+      <!-- Stats -->
+      <div class="glass-card" style="grid-column:2/4">
+        <div class="card-title">Activity Summary</div>
+        <div class="widget-grid cols-3" style="margin-top:12px">
+          <div class="stat-card"><div class="stat-value" id="stat-favs">—</div><div class="stat-label">Saved Locations</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-bks">—</div><div class="stat-label">Map Bookmarks</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-acts">—</div><div class="stat-label">Activity Events</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Favorite Locations -->
+    <div class="glass-card" style="margin-bottom:20px">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+        Favourite Locations
+        <button class="btn-neon" style="font-size:0.72rem;padding:6px 14px" onclick="showAddFav()">+ Add Location</button>
+      </div>
+      <div id="add-fav-form" style="display:none;padding:14px;background:rgba(34,229,255,0.04);border-radius:8px;margin:10px 0;display:none">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div><label style="font-size:0.68rem;color:var(--text-dim2)">Name</label><input id="fav-name" placeholder="Bay of Bengal" style="display:block;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text-primary);padding:7px 10px;font-size:0.82rem;width:150px"></div>
+          <div><label style="font-size:0.68rem;color:var(--text-dim2)">Latitude</label><input id="fav-lat" type="number" step="0.01" placeholder="13.0" style="display:block;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text-primary);padding:7px 10px;font-size:0.82rem;width:100px"></div>
+          <div><label style="font-size:0.68rem;color:var(--text-dim2)">Longitude</label><input id="fav-lon" type="number" step="0.01" placeholder="80.0" style="display:block;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text-primary);padding:7px 10px;font-size:0.82rem;width:100px"></div>
+          <button class="btn-neon btn-primary" onclick="addFav()">Save</button>
+        </div>
+      </div>
+      <div id="favs-list" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Map Bookmarks -->
+    <div class="glass-card">
+      <div class="card-title">Map Bookmarks</div>
+      <div id="bms-list" style="margin-top:10px"></div>
+    </div>
+  </main>
+</div>
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+let showingAddFav = false;
+function showAddFav(){ showingAddFav=!showingAddFav; document.getElementById('add-fav-form').style.display=showingAddFav?'block':'none'; }
+
+async function loadProfile(){
+  try {
+    const d = await OceanApp.api('/api/auth/me');
+    const u = d.user;
+    document.getElementById('prof-name').textContent = u.display_name||u.username;
+    document.getElementById('prof-role').textContent = u.role.toUpperCase();
+    document.getElementById('prof-email').textContent = u.email||'—';
+    document.getElementById('prof-joined').textContent = 'Joined: '+(u.created_at||'').slice(0,10);
+  } catch(e){ document.getElementById('prof-name').textContent='Demo User'; }
+
+  const [fR,bR,aR] = await Promise.all([
+    OceanApp.api('/api/favorites').catch(()=>({favorites:[],total:0})),
+    OceanApp.api('/api/bookmarks').catch(()=>({bookmarks:[],total:0})),
+    OceanApp.api('/api/activity?limit=200').catch(()=>({activity:[],total:0})),
+  ]);
+  document.getElementById('stat-favs').textContent = fR.total;
+  document.getElementById('stat-bks').textContent = bR.total;
+  document.getElementById('stat-acts').textContent = aR.total;
+
+  const fl = document.getElementById('favs-list');
+  if(!fR.favorites.length){ fl.innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem">No saved locations yet.</p>'; }
+  else { fl.innerHTML = fR.favorites.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(34,229,255,0.07)"><div><b style="font-size:0.85rem">${f.name}</b> <span style="font-size:0.72rem;color:var(--text-dim2)">${f.latitude?.toFixed(2)}°N ${f.longitude?.toFixed(2)}°E</span></div><button onclick="deleteFav(${f.id})" style="background:none;border:1px solid rgba(255,59,92,0.3);color:var(--accent-danger);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:0.7rem">✕</button></div>`).join(''); }
+
+  const bl = document.getElementById('bms-list');
+  if(!bR.bookmarks.length){ bl.innerHTML='<p style="color:var(--text-dim2);font-size:0.8rem">No bookmarks yet. Add from the GIS Map page.</p>'; }
+  else { bl.innerHTML = bR.bookmarks.map(b=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(34,229,255,0.07)"><div><b style="font-size:0.85rem">${b.name}</b> <span style="font-size:0.72rem;color:var(--text-dim2)">${b.latitude?.toFixed(2)}°N ${b.longitude?.toFixed(2)}°E · Zoom ${b.zoom} · ${b.layer}</span></div><button onclick="deleteBm(${b.id})" style="background:none;border:1px solid rgba(255,59,92,0.3);color:var(--accent-danger);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:0.7rem">✕</button></div>`).join(''); }
+}
+
+async function addFav(){
+  const name=document.getElementById('fav-name').value.trim();
+  const lat=parseFloat(document.getElementById('fav-lat').value);
+  const lon=parseFloat(document.getElementById('fav-lon').value);
+  if(!name||isNaN(lat)||isNaN(lon)){OceanApp.toast('Fill all fields','error');return;}
+  await OceanApp.api('/api/favorites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,lat,lon})});
+  OceanApp.toast('Location saved','success'); showAddFav(); loadProfile();
+}
+async function deleteFav(id){ await OceanApp.api('/api/favorites/'+id,{method:'DELETE'}); OceanApp.toast('Removed','info'); loadProfile(); }
+async function deleteBm(id){ await OceanApp.api('/api/bookmarks/'+id,{method:'DELETE'}); OceanApp.toast('Removed','info'); loadProfile(); }
+loadProfile();
+</script>
+</body>
+</html>

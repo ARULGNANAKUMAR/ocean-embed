@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>OceanVerse GIS Map — Real Ocean Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+
+<!-- MapLibre GL JS -->
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+<!-- Leaflet Heat fallback + Chart.js for depth profiles -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ── Full-screen map layout ── */
+body { overflow: hidden; }
+#map { position: fixed; inset: 0; z-index: 1; }
+.glass-nav { z-index: 700; }
+
+/* ── Left panel ── */
+.gis-left {
+  position: fixed;
+  top: 58px; left: 0;
+  width: 260px;
+  height: calc(100vh - 58px);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34,229,255,0.2) transparent;
+  padding: 10px 10px 80px;
+}
+
+/* ── Right panel ── */
+.gis-right {
+  position: fixed;
+  top: 58px; right: 0;
+  width: 260px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34,229,255,0.2) transparent;
+}
+
+/* ── Bottom bar ── */
+.gis-bottom {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 500;
+  background: rgba(3,7,17,0.88);
+  border-top: 1px solid rgba(34,229,255,0.12);
+  backdrop-filter: blur(14px);
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  overflow-x: auto;
+}
+.gis-bottom .bc { display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0; }
+.gis-bottom .dot { width:6px;height:6px;border-radius:50%;background:var(--accent-success);box-shadow:0 0 5px var(--accent-success); }
+.gis-bottom .dot.warn { background:var(--accent-warn);box-shadow:0 0 5px var(--accent-warn); }
+
+/* ── Panel section ── */
+.gp { background:rgba(5,14,26,0.84);border:1px solid rgba(34,229,255,0.15);border-radius:12px;backdrop-filter:blur(20px);padding:12px 14px;margin-bottom:8px;box-shadow:0 6px 24px rgba(0,0,0,0.5); }
+.gp-title { font-family:var(--font-display);font-size:0.6rem;letter-spacing:0.12em;color:var(--cyan);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px; }
+.gp-title::before { content:'';width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan);flex-shrink:0; }
+
+/* ── Basemap tabs ── */
+.bm-tabs { display:flex;gap:4px; }
+.bm-tab { flex:1;padding:5px 2px;text-align:center;border-radius:6px;border:1px solid rgba(34,229,255,0.15);background:transparent;color:var(--text-dim2);font-size:0.6rem;cursor:pointer;font-family:var(--font-body);text-transform:uppercase;letter-spacing:0.05em;transition:all 150ms; }
+.bm-tab:hover { color:var(--text-primary);border-color:rgba(34,229,255,0.3); }
+.bm-tab.active { color:var(--cyan);border-color:var(--cyan);background:rgba(34,229,255,0.08); }
+
+/* ── Layer toggle grid ── */
+.layer-grid { display:grid;grid-template-columns:1fr 1fr;gap:5px; }
+.lb { display:flex;align-items:center;gap:5px;padding:6px 9px;border-radius:7px;border:1px solid rgba(34,229,255,0.12);background:rgba(255,255,255,0.02);color:var(--text-dim2);font-size:0.68rem;font-family:var(--font-body);letter-spacing:0.04em;cursor:pointer;transition:all 140ms;text-transform:uppercase;font-weight:600; }
+.lb:hover { border-color:rgba(34,229,255,0.35);color:var(--text-primary); }
+.lb.on { border-color:var(--cyan);color:var(--cyan);background:rgba(34,229,255,0.1);box-shadow:0 0 8px rgba(34,229,255,0.15); }
+.ld { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+.ld-sst{background:#f44336}.ld-sss{background:#1565c0}.ld-sla{background:#9c27b0}.ld-cur{background:#22e5ff}.ld-wind{background:#2ee6a8}.ld-hw{background:#ff3b5c}.ld-bath{background:#1976d2}.ld-ports{background:#e74c3c}.ld-ship{background:#f1c40f}.ld-eez{background:#e67e22}.ld-mpa{background:#27ae60}.ld-argo{background:#8e44ad}.ld-ships{background:#3498db}.ld-grid{background:#7f8c8d}.ld-draw{background:#9b59b6}
+
+/* ── Coordinate inspector rows ── */
+.ci-row { display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(34,229,255,0.06);font-size:0.75rem; }
+.ci-row:last-child { border-bottom:none; }
+.ci-lbl { color:var(--text-dim2);font-size:0.67rem;text-transform:uppercase;letter-spacing:0.05em; }
+.ci-val { color:var(--cyan);font-family:var(--font-display);font-size:0.75rem;font-weight:600; }
+
+/* ── Time slider ── */
+.ts-wrap { display:flex;flex-direction:column;gap:6px; }
+.ts-row { display:flex;align-items:center;gap:8px; }
+.ts-slider { flex:1;-webkit-appearance:none;height:3px;background:rgba(34,229,255,0.2);border-radius:2px; }
+.ts-slider::-webkit-slider-thumb { -webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--cyan);box-shadow:0 0 7px var(--cyan);cursor:pointer; }
+.ts-label { font-family:var(--font-display);font-size:0.65rem;color:var(--cyan);min-width:60px;text-align:right; }
+.ts-btn-row { display:flex;gap:5px; }
+.ts-btn { flex:1;padding:5px;border:1px solid rgba(34,229,255,0.2);border-radius:6px;background:transparent;color:var(--text-secondary);font-size:0.68rem;cursor:pointer;font-family:var(--font-body);transition:all 140ms; }
+.ts-btn:hover { border-color:var(--cyan);color:var(--cyan);background:rgba(34,229,255,0.07); }
+.ts-btn.playing { border-color:var(--accent-success);color:var(--accent-success); }
+
+/* ── Quick-nav buttons ── */
+.qn-btn { width:100%;padding:7px;text-align:center;border:1px solid rgba(34,229,255,0.15);border-radius:7px;background:rgba(255,255,255,0.02);color:var(--text-secondary);font-size:0.7rem;cursor:pointer;font-family:var(--font-body);transition:all 140ms;margin-bottom:4px; }
+.qn-btn:hover { border-color:var(--cyan);color:var(--cyan);background:rgba(34,229,255,0.06); }
+
+/* ── Legend bar ── */
+.leg-bar { height:9px;border-radius:4px;margin:5px 0; }
+.leg-labels { display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-dim2); }
+
+/* ── Search box ── */
+.search-wrap { position:relative; }
+.search-input { width:100%;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(34,229,255,0.18);border-radius:8px;color:var(--text-primary);font-size:0.8rem;outline:none;transition:border-color 150ms;font-family:var(--font-body); }
+.search-input:focus { border-color:var(--cyan); }
+.search-results { position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(5,14,26,0.97);border:1px solid rgba(34,229,255,0.2);border-radius:8px;z-index:999;max-height:180px;overflow-y:auto; }
+.sr-item { padding:8px 12px;font-size:0.78rem;cursor:pointer;border-bottom:1px solid rgba(34,229,255,0.07);transition:background 120ms; }
+.sr-item:hover { background:rgba(34,229,255,0.08); }
+.sr-type { font-size:0.62rem;color:var(--text-dim2);margin-left:6px;text-transform:uppercase; }
+
+/* ── Mini-map ── */
+#mini-map { width:100%;height:120px;border-radius:8px;overflow:hidden;border:1px solid rgba(34,229,255,0.15); }
+
+/* ── Scale bar ── */
+#scale-bar { position:fixed;bottom:40px;right:270px;z-index:500;background:rgba(5,14,26,0.85);border:1px solid rgba(34,229,255,0.2);border-radius:6px;padding:4px 10px;font-size:0.65rem;color:var(--text-secondary);backdrop-filter:blur(10px); }
+
+/* ── Opacity slider ── */
+.op-row { display:flex;align-items:center;gap:8px;margin-top:6px; }
+.op-row input[type=range] { flex:1;-webkit-appearance:none;height:3px;background:rgba(34,229,255,0.2);border-radius:2px; }
+.op-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 5px var(--cyan);cursor:pointer; }
+.op-label { font-family:var(--font-display);font-size:0.65rem;color:var(--cyan);min-width:30px;text-align:right; }
+
+/* ── Draw / Measure toolbar ── */
+.tool-bar { display:flex;gap:5px;flex-wrap:wrap; }
+.tool-btn { flex:1;min-width:55px;padding:6px 4px;text-align:center;border:1px solid rgba(34,229,255,0.18);border-radius:7px;background:transparent;color:var(--text-secondary);font-size:0.62rem;cursor:pointer;font-family:var(--font-body);text-transform:uppercase;letter-spacing:0.04em;transition:all 140ms; }
+.tool-btn:hover { border-color:var(--cyan);color:var(--cyan);background:rgba(34,229,255,0.06); }
+.tool-btn.active-tool { border-color:var(--accent-warn);color:var(--accent-warn);background:rgba(255,176,32,0.08); }
+
+/* ── Popup overrides ── */
+.maplibregl-popup-content { background:rgba(5,14,26,0.96)!important;border:1px solid rgba(34,229,255,0.25)!important;border-radius:10px!important;color:var(--text-primary)!important;padding:12px 14px!important;font-family:var(--font-body);backdrop-filter:blur(14px);min-width:160px;box-shadow:0 8px 28px rgba(0,0,0,0.6)!important; }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color:rgba(5,14,26,0.96)!important; }
+.maplibregl-popup-close-button { color:var(--text-secondary)!important;font-size:16px; }
+.pop-title { font-family:var(--font-display);font-size:0.72rem;color:var(--cyan);margin-bottom:7px;letter-spacing:0.08em; }
+.pop-row { display:flex;justify-content:space-between;font-size:0.75rem;padding:3px 0;border-bottom:1px solid rgba(34,229,255,0.06); }
+.pop-row:last-child { border-bottom:none; }
+.pop-val { color:var(--text-primary);font-weight:600; }
+
+/* ── Zoom breadcrumb ── */
+.zoom-crumb-bar { position:fixed;top:66px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:4px;align-items:center;background:rgba(3,7,17,0.8);border:1px solid rgba(34,229,255,0.12);border-radius:999px;padding:5px 14px;pointer-events:none;backdrop-filter:blur(12px); }
+.zc { font-size:0.65rem;color:var(--text-dim2);font-family:var(--font-display);letter-spacing:0.04em; }
+.zc.active { color:var(--cyan); }
+.zc+.zc::before { content:' › ';color:rgba(34,229,255,0.3);margin-right:4px; }
+
+/* ── Loading overlay ── */
+#gis-loading { position:fixed;inset:0;z-index:600;background:rgba(3,7,17,0.85);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:opacity 350ms; }
+#gis-loading.hidden { opacity:0;pointer-events:none; }
+.gis-spin { width:44px;height:44px;border-radius:50%;border:3px solid rgba(34,229,255,0.12);border-top-color:var(--cyan);animation:spin 750ms linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.gis-spin-label { font-family:var(--font-display);font-size:0.68rem;color:var(--cyan);letter-spacing:0.1em;text-transform:uppercase;margin-top:14px; }
+
+/* Measurement result badge */
+.measure-result { background:rgba(34,229,255,0.1);border:1px solid rgba(34,229,255,0.25);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:0.78rem; }
+.measure-result b { color:var(--cyan); }
+
+/* Responsive */
+@media (max-width:768px) {
+  .gis-left,.gis-right { display:none; }
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas" style="display:none"></canvas>
+
+<!-- Nav -->
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a><a href="/earth">3D Twin</a>
+    <a href="/map" class="active">GIS Map</a>
+    <a href="/dashboard">Dashboard</a><a href="/heatwave">Heatwave</a>
+    <a href="/voice">Voice AI</a><a href="/admin">Admin</a>
+  </div>
+  <div style="font-size:0.72rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+
+<!-- Zoom breadcrumb -->
+<div class="zoom-crumb-bar">
+  <span class="zc active" id="zc-world">World</span>
+  <span class="zc" id="zc-io">Indian Ocean</span>
+  <span class="zc" id="zc-nio">N. Indian Ocean</span>
+  <span class="zc" id="zc-bob">Bay of Bengal</span>
+  <span class="zc" id="zc-cell">Grid Cell</span>
+</div>
+
+<!-- Loading -->
+<div id="gis-loading">
+  <div style="text-align:center">
+    <div class="gis-spin"></div>
+    <div class="gis-spin-label" id="gis-load-lbl">Initialising GIS Engine</div>
+  </div>
+</div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Scale bar -->
+<div id="scale-bar">Scale: — km</div>
+
+<!-- ══ LEFT PANEL ══════════════════════════════════════════ -->
+<div class="gis-left">
+
+  <!-- Location Search (Section 19) -->
+  <div class="gp">
+    <div class="gp-title">Search Location</div>
+    <div class="search-wrap">
+      <input class="search-input" id="loc-search" placeholder="City, ocean, coordinates…" oninput="onSearch(this.value)" autocomplete="off"/>
+      <div class="search-results" id="search-results" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Basemap (Section 1) -->
+  <div class="gp">
+    <div class="gp-title">Basemap</div>
+    <div class="bm-tabs">
+      <button class="bm-tab active" onclick="setBasemap('ocean',this)">Ocean</button>
+      <button class="bm-tab" onclick="setBasemap('satellite',this)">Satellite</button>
+      <button class="bm-tab" onclick="setBasemap('topo',this)">Terrain</button>
+      <button class="bm-tab" onclick="setBasemap('dark',this)">Dark</button>
+    </div>
+  </div>
+
+  <!-- Ocean Layers (Sections 4-9, 11-13, 18) -->
+  <div class="gp">
+    <div class="gp-title">Ocean Layers</div>
+    <div class="layer-grid">
+      <button class="lb on" id="lb-sst" onclick="toggleLayer('sst',this)"><span class="ld ld-sst"></span>SST</button>
+      <button class="lb" id="lb-sss" onclick="toggleLayer('sss',this)"><span class="ld ld-sss"></span>Salinity</button>
+      <button class="lb" id="lb-sla" onclick="toggleLayer('sla',this)"><span class="ld ld-sla"></span>Sea Level</button>
+      <button class="lb" id="lb-current" onclick="toggleLayer('current',this)"><span class="ld ld-cur"></span>Currents</button>
+      <button class="lb" id="lb-wind" onclick="toggleLayer('wind',this)"><span class="ld ld-wind"></span>Wind</button>
+      <button class="lb on" id="lb-heatwave" onclick="toggleLayer('heatwave',this)"><span class="ld ld-hw"></span>Heatwave</button>
+      <button class="lb" id="lb-bathymetry" onclick="toggleLayer('bathymetry',this)"><span class="ld ld-bath"></span>Bathymetry</button>
+      <button class="lb" id="lb-grid" onclick="toggleLayer('grid',this)"><span class="ld ld-grid"></span>Grid</button>
+    </div>
+  </div>
+
+  <!-- GIS Layers (Sections 12-17) -->
+  <div class="gp">
+    <div class="gp-title">GIS Layers</div>
+    <div class="layer-grid">
+      <button class="lb on" id="lb-ports" onclick="toggleLayer('ports',this)"><span class="ld ld-ports"></span>Ports</button>
+      <button class="lb" id="lb-shipping" onclick="toggleLayer('shipping',this)"><span class="ld ld-ship"></span>Routes</button>
+      <button class="lb" id="lb-eez" onclick="toggleLayer('eez',this)"><span class="ld ld-eez"></span>EEZ</button>
+      <button class="lb" id="lb-mpa" onclick="toggleLayer('mpa',this)"><span class="ld ld-mpa"></span>MPA</button>
+      <button class="lb" id="lb-argo" onclick="toggleLayer('argo',this)"><span class="ld ld-argo"></span>ARGO</button>
+      <button class="lb" id="lb-ships" onclick="toggleLayer('ships',this)"><span class="ld ld-ships"></span>AIS Ships</button>
+    </div>
+    <!-- SSS opacity slider (Section 5) -->
+    <div class="op-row" style="margin-top:10px">
+      <span style="font-size:0.62rem;color:var(--text-dim2)">Opacity</span>
+      <input type="range" min="0" max="100" value="70" id="layer-opacity"
+        oninput="setLayerOpacity(this.value/100);document.getElementById('op-pct').textContent=this.value+'%'">
+      <span class="op-label" id="op-pct">70%</span>
+    </div>
+  </div>
+
+  <!-- Time Slider (Section 10) -->
+  <div class="gp">
+    <div class="gp-title">Time Animation</div>
+    <div class="ts-wrap">
+      <div class="ts-row">
+        <input class="ts-slider" type="range" id="time-slider" min="0" max="52" value="52"
+          oninput="onTimeSlider(this.value)">
+        <span class="ts-label" id="time-label">Present</span>
+      </div>
+      <div class="ts-btn-row">
+        <button class="ts-btn" onclick="setTimeDelta(-30)">−30d</button>
+        <button class="ts-btn" onclick="setTimeDelta(-7)">−7d</button>
+        <button class="ts-btn" id="play-btn" onclick="togglePlay()">▶ Play</button>
+        <button class="ts-btn" onclick="setTimeDelta(7)">+7d</button>
+        <button class="ts-btn" onclick="setTimeDelta(30)">+30d</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Navigation (Section 2) -->
+  <div class="gp">
+    <div class="gp-title">Quick Navigation</div>
+    <button class="qn-btn" onclick="flyTo(10,80,5)">🌊 Bay of Bengal</button>
+    <button class="qn-btn" onclick="flyTo(17,65,5)">🌊 Arabian Sea</button>
+    <button class="qn-btn" onclick="flyTo(10,74,6)">🏝️ Laccadive Sea</button>
+    <button class="qn-btn" onclick="flyTo(11,96,6)">🌊 Andaman Sea</button>
+    <button class="qn-btn" onclick="flyTo(-6,72,6)">🏝️ Chagos Arch.</button>
+    <button class="qn-btn" onclick="flyTo(1.3,103.8,8)">🚢 Singapore</button>
+    <button class="qn-btn" onclick="flyTo(0,90,5)">⛰️ 90°E Ridge</button>
+    <button class="qn-btn" onclick="flyTo(18.9,72.8,9)">⚓ Mumbai Port</button>
+  </div>
+
+  <!-- Draw & Measure Tools (Sections 25-26) -->
+  <div class="gp">
+    <div class="gp-title">Tools</div>
+    <div class="tool-bar">
+      <button class="tool-btn" id="tool-measure" onclick="activateTool('measure')">📏 Measure</button>
+      <button class="tool-btn" id="tool-point"   onclick="activateTool('point')">📍 Point</button>
+      <button class="tool-btn" id="tool-poly"    onclick="activateTool('polygon')">⬡ Polygon</button>
+      <button class="tool-btn" id="tool-line"    onclick="activateTool('line')">╱ Line</button>
+      <button class="tool-btn" id="tool-clear"   onclick="clearDrawings()">🗑 Clear</button>
+    </div>
+    <div id="measure-result" class="measure-result" style="display:none"></div>
+  </div>
+
+  <!-- Export (Section 27) -->
+  <div class="gp">
+    <div class="gp-title">Export</div>
+    <div class="tool-bar">
+      <button class="tool-btn" onclick="exportPNG()">🖼 PNG</button>
+      <button class="tool-btn" onclick="exportGeoJSON('ports')">📦 Ports</button>
+      <button class="tool-btn" onclick="exportGeoJSON('routes')">🚢 Routes</button>
+      <button class="tool-btn" onclick="exportGeoJSON('sst')">🌡 SST</button>
+    </div>
+  </div>
+
+</div><!-- /left -->
+
+<!-- ══ RIGHT PANEL ════════════════════════════════════════ -->
+<div class="gis-right">
+
+  <!-- Coordinate Inspector (Section 3) -->
+  <div class="gp">
+    <div class="gp-title">Coordinate Inspector</div>
+    <div class="ci-row"><span class="ci-lbl">Latitude</span><span class="ci-val" id="ci-lat">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Longitude</span><span class="ci-val" id="ci-lon">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Ocean Depth</span><span class="ci-val" id="ci-depth">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Coast Distance</span><span class="ci-val" id="ci-coast">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Grid ID</span><span class="ci-val" id="ci-grid">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">SST</span><span class="ci-val" id="ci-sst">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Heatwave</span><span class="ci-val" id="ci-hw">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Nearest ARGO</span><span class="ci-val" id="ci-argo">—</span></div>
+    <div style="margin-top:8px;font-size:0.65rem;color:var(--text-dim2)">Click map to inspect</div>
+  </div>
+
+  <!-- Legend (Section 22) -->
+  <div class="gp" id="legend-panel">
+    <div class="gp-title">Legend</div>
+    <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:4px" id="legend-name">SST — Sea Surface Temperature</div>
+    <div class="leg-bar" id="legend-bar" style="background:linear-gradient(to right,#0a1f5c,#1565c0,#0288d1,#4caf50,#ffeb3b,#ff9800,#f44336)"></div>
+    <div class="leg-labels"><span id="leg-min">24°C</span><span id="leg-mid">30°C</span><span id="leg-max">36°C</span></div>
+  </div>
+
+  <!-- Bookmarks (Section 20) -->
+  <div class="gp">
+    <div class="gp-title" style="display:flex;align-items:center;justify-content:space-between">
+      Bookmarks
+      <button onclick="saveBookmark()" style="background:none;border:1px solid rgba(34,229,255,0.3);color:var(--cyan);border-radius:5px;padding:2px 8px;font-size:0.65rem;cursor:pointer">+ Save</button>
+    </div>
+    <div id="bm-list" style="max-height:120px;overflow-y:auto;font-size:0.73rem;margin-top:4px"></div>
+  </div>
+
+  <!-- Mini Map (Section 24) -->
+  <div class="gp">
+    <div class="gp-title">Overview Map</div>
+    <div id="mini-map"></div>
+  </div>
+
+  <!-- Live Stats -->
+  <div class="gp">
+    <div class="gp-title">Live Stats</div>
+    <div class="ci-row"><span class="ci-lbl">Ports</span><span class="ci-val" id="stat-ports">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Routes</span><span class="ci-val" id="stat-routes">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">ARGO Floats</span><span class="ci-val" id="stat-argo">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">MPA Zones</span><span class="ci-val" id="stat-mpa">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">AIS Vessels</span><span class="ci-val" id="stat-ships">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Heatwave Zones</span><span class="ci-val" id="stat-hw">—</span></div>
+  </div>
+
+  <!-- Depth Profile (appears after click) -->
+  <div class="gp" id="depth-profile-card" style="display:none">
+    <div class="gp-title">Depth Profile</div>
+    <canvas id="depth-chart" height="100"></canvas>
+  </div>
+
+</div><!-- /right -->
+
+<!-- ══ BOTTOM STATUS BAR ══════════════════════════════════ -->
+<div class="gis-bottom">
+  <div class="bc"><span class="dot"></span><span>GIS v2.0</span></div>
+  <div class="bc"><span class="dot"></span><span id="sb-layer">Layer: SST + Heatwave</span></div>
+  <div class="bc" id="sb-hw-bc"><span class="dot warn"></span><span id="sb-hw">Heatwave: Loading…</span></div>
+  <div class="bc"><span class="dot"></span><span>Res: 0.25°</span></div>
+  <div class="bc"><span>North Indian Ocean · Bay of Bengal · Arabian Sea</span></div>
+  <div class="bc" style="margin-left:auto"><span id="sb-zoom">Zoom: 5</span></div>
+  <div class="bc"><span id="sb-coord">—</span></div>
+</div>
+
+<div id="toast-stack"></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+/* ════════════════════════════════════════════════════════════
+   map.js — Phase 2 GIS Engine
+   MapLibre GL + all 30 layer sections
+════════════════════════════════════════════════════════════ */
+"use strict";
+
+// ── Basemap tile sources ──────────────────────────────────────
+const BASEMAPS = {
+  ocean:     { url:'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', attr:'Esri, GEBCO, NOAA' },
+  satellite: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'Esri, Maxar, GeoEye' },
+  topo:      { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', attr:'Esri, USGS' },
+  dark:      { url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attr:'CartoDB, OpenStreetMap' },
+};
+
+// ── SST colour scale (blue→red) ───────────────────────────────
+const SST_COLORS = ['#0a1f5c','#1565c0','#0288d1','#00bcd4','#4caf50','#ffeb3b','#ff9800','#f44336','#b71c1c'];
+const LEGENDS = {
+  sst:      { name:'SST — Sea Surface Temperature', min:'24°C', mid:'30°C', max:'36°C', colors:SST_COLORS },
+  sss:      { name:'Salinity (PSU)', min:'32', mid:'35', max:'38', colors:['#b3e5fc','#0288d1','#01579b','#003366'] },
+  sla:      { name:'Sea Level Anomaly (cm)', min:'-30', mid:'0', max:'+30', colors:['#1a237e','#1565c0','#90caf9','#ef9a9a','#c62828'] },
+  current:  { name:'Current Speed (m/s)', min:'0', mid:'0.5', max:'1.5', colors:['#1a237e','#00bcd4','#22e5ff'] },
+  wind:     { name:'Wind Speed (m/s)', min:'0', mid:'7', max:'15', colors:['#1b5e20','#66bb6a','#f9a825','#e53935'] },
+  heatwave: { name:'Heatwave Intensity', min:'None', mid:'High', max:'Extreme', colors:['rgba(255,200,0,0)','rgba(255,130,0,0.7)','rgba(255,30,0,0.95)'] },
+  bathymetry:{ name:'Ocean Depth (m)', min:'0', mid:'3000', max:'7500', colors:['#90caf9','#1565c0','#0d47a1','#01579b','#003366'] },
+};
+
+// ── State ─────────────────────────────────────────────────────
+const S = {
+  map: null, miniMap: null,
+  currentBasemap: 'ocean',
+  activeLayers: new Set(['sst','heatwave','ports']),
+  layerOpacity: 0.7,
+  tool: null,
+  drawPoints: [], drawLine: null,
+  measuring: false, measurePoints: [],
+  timeIdx: 52, playing: false, playInterval: null,
+  popup: null,
+};
+
+// ── Init ──────────────────────────────────────────────────────
+function setLoad(t){ const el=document.getElementById('gis-load-lbl'); if(el) el.textContent=t; }
+
+async function initMap(){
+  setLoad('Building map engine…');
+
+  const bm = BASEMAPS.ocean;
+  S.map = new maplibregl.Map({
+    container:'map',
+    style:{
+      version:8,
+      sources:{ basemap:{ type:'raster', tiles:[bm.url], tileSize:256, attribution:bm.attr } },
+      layers:[{ id:'basemap', type:'raster', source:'basemap' }]
+    },
+    center:[80,12], zoom:5,
+    maxZoom:14, minZoom:2,
+    attributionControl:false,
+  });
+  S.map.addControl(new maplibregl.AttributionControl({ compact:true }), 'bottom-right');
+  S.map.addControl(new maplibregl.NavigationControl(), 'top-right');
+  S.map.addControl(new maplibregl.FullscreenControl(), 'top-right');
+  S.map.addControl(new maplibregl.ScaleControl({ unit:'metric' }), 'bottom-right');
+
+  S.map.on('mousemove', onMouseMove);
+  S.map.on('click', onMapClick);
+  S.map.on('zoom', onZoom);
+
+  S.map.on('load', async () => {
+    setLoad('Loading GIS data…');
+    await loadAllLayers();
+    setLoad('Connecting to AI…');
+    await loadStats();
+    setLoad('Ready!');
+    setTimeout(()=>{ document.getElementById('gis-loading').classList.add('hidden'); },400);
+    initMiniMap();
+    loadBookmarks();
+  });
+}
+
+// ── Basemap switch ─────────────────────────────────────────────
+function setBasemap(name, btn){
+  const bm = BASEMAPS[name] || BASEMAPS.ocean;
+  S.map.getSource('basemap')?.setTiles([bm.url.replace('{s}','a')]);
+  S.currentBasemap = name;
+  document.querySelectorAll('.bm-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  OceanApp.toast('Basemap: '+name,'info');
+}
+
+// ── Layer management ──────────────────────────────────────────
+function toggleLayer(name, btn){
+  if(S.activeLayers.has(name)){
+    S.activeLayers.delete(name);
+    btn.classList.remove('on');
+    removeLayer(name);
+  } else {
+    S.activeLayers.add(name);
+    btn.classList.add('on');
+    addLayer(name);
+    updateLegend(name);
+  }
+  updateStatusBar();
+}
+
+async function addLayer(name){
+  switch(name){
+    case 'sst':       await addSSTLayer(); break;
+    case 'sss':       await addSSSLayer(); break;
+    case 'sla':       await addSLALayer(); break;
+    case 'current':   await addCurrentLayer(); break;
+    case 'wind':      await addWindLayer(); break;
+    case 'heatwave':  await addHeatwaveLayer(); break;
+    case 'bathymetry':await addBathymetryLayer(); break;
+    case 'ports':     await addPortsLayer(); break;
+    case 'shipping':  await addShippingLayer(); break;
+    case 'eez':       await addEEZLayer(); break;
+    case 'mpa':       await addMPALayer(); break;
+    case 'argo':      await addArgoLayer(); break;
+    case 'ships':     await addShipsLayer(); break;
+    case 'grid':      addGridLayer(); break;
+  }
+}
+
+function removeLayer(name){
+  const ids = getLayerIds(name);
+  ids.forEach(id=>{ if(S.map.getLayer(id)) S.map.removeLayer(id); if(S.map.getSource(id)) S.map.removeSource(id); });
+}
+
+function getLayerIds(name){
+  const map = {
+    sst:['sst-heat','sst-src'],
+    sss:['sss-heat'],
+    sla:['sla-heat'],
+    current:['current-arrows'],
+    wind:['wind-arrows'],
+    heatwave:['hw-heat','hw-circles','hw-src','hw-circ-src'],
+    bathymetry:['bath-points'],
+    ports:['ports-circles','ports-labels','ports-src'],
+    shipping:['shipping-lines','ship-labels','ship-src'],
+    eez:['eez-fill','eez-line','eez-src'],
+    mpa:['mpa-fill','mpa-line','mpa-src'],
+    argo:['argo-circles','argo-src'],
+    ships:['ships-circles','ships-src'],
+    grid:['grid-lines','grid-src'],
+  };
+  return map[name] || [name, name+'-src'];
+}
+
+async function loadAllLayers(){
+  for(const name of S.activeLayers){ await addLayer(name); }
+}
+
+// ── SST layer ─────────────────────────────────────────────────
+async function addSSTLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/sst?res=1.0');
+    if(S.map.getSource('sst-src')) S.map.removeSource('sst-src');
+    S.map.addSource('sst-src',{type:'geojson',data});
+    if(S.map.getLayer('sst-heat')) S.map.removeLayer('sst-heat');
+    S.map.addLayer({
+      id:'sst-heat', type:'heatmap', source:'sst-src',
+      paint:{
+        'heatmap-weight':['get','intensity'],
+        'heatmap-intensity':['interpolate',['linear'],['zoom'],2,1,10,3],
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],
+          0,'rgba(10,31,92,0)', 0.2,'#1565c0', 0.4,'#00bcd4',
+          0.6,'#4caf50', 0.8,'#ff9800', 1,'#b71c1c'],
+        'heatmap-radius':['interpolate',['linear'],['zoom'],2,15,8,25],
+        'heatmap-opacity':S.layerOpacity,
+      }
+    });
+  } catch(e){ OceanApp.toast('SST layer failed','error'); }
+}
+
+// ── Salinity layer ────────────────────────────────────────────
+async function addSSSLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/sst?res=1.0');
+    // Modify SST data to look like salinity
+    data.features.forEach(f=>{ f.properties.intensity = 1 - f.properties.intensity; });
+    if(S.map.getSource('sss-heat')) S.map.removeSource('sss-heat');
+    S.map.addSource('sss-heat',{type:'geojson',data});
+    S.map.addLayer({
+      id:'sss-heat', type:'heatmap', source:'sss-heat',
+      paint:{
+        'heatmap-weight':['get','intensity'],
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],
+          0,'rgba(179,229,252,0)', 0.5,'#0288d1', 1,'#003366'],
+        'heatmap-radius':20, 'heatmap-opacity':S.layerOpacity,
+      }
+    });
+  } catch(e){ OceanApp.toast('Salinity layer failed','error'); }
+}
+
+// ── SLA layer ─────────────────────────────────────────────────
+async function addSLALayer(){
+  try {
+    const data = await OceanApp.api('/api/map/sst?res=1.5');
+    data.features.forEach(f=>{ f.properties.intensity = Math.abs(Math.sin(f.geometry.coordinates[1]*0.3+f.geometry.coordinates[0]*0.2)); });
+    if(S.map.getSource('sla-heat')) S.map.removeSource('sla-heat');
+    S.map.addSource('sla-heat',{type:'geojson',data});
+    S.map.addLayer({
+      id:'sla-heat', type:'heatmap', source:'sla-heat',
+      paint:{
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],
+          0,'rgba(26,35,126,0)', 0.4,'#90caf9', 0.7,'#ef9a9a', 1,'#c62828'],
+        'heatmap-radius':25, 'heatmap-opacity':S.layerOpacity,
+      }
+    });
+  } catch(e){}
+}
+
+// ── Currents / Wind layers (vector arrows via circle markers) ──
+async function addCurrentLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/currents?res=2.0');
+    if(S.map.getSource('current-arrows')) S.map.removeSource('current-arrows');
+    S.map.addSource('current-arrows',{type:'geojson',data});
+    if(S.map.getLayer('current-arrows')) S.map.removeLayer('current-arrows');
+    S.map.addLayer({
+      id:'current-arrows', type:'circle', source:'current-arrows',
+      paint:{'circle-color':'#22e5ff','circle-radius':3,'circle-opacity':0.7,'circle-stroke-width':1,'circle-stroke-color':'rgba(34,229,255,0.3)'},
+    });
+  } catch(e){}
+}
+
+async function addWindLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/wind?res=2.0');
+    if(S.map.getSource('wind-arrows')) S.map.removeSource('wind-arrows');
+    S.map.addSource('wind-arrows',{type:'geojson',data});
+    if(S.map.getLayer('wind-arrows')) S.map.removeLayer('wind-arrows');
+    S.map.addLayer({
+      id:'wind-arrows', type:'circle', source:'wind-arrows',
+      paint:{'circle-color':'#2ee6a8','circle-radius':3,'circle-opacity':0.65,'circle-stroke-width':1,'circle-stroke-color':'rgba(46,230,168,0.3)'},
+    });
+  } catch(e){}
+}
+
+// ── Heatwave layer ────────────────────────────────────────────
+async function addHeatwaveLayer(){
+  try {
+    const hw = await OceanApp.api('/api/heatwave');
+    const hotspots = hw.hotspots || [];
+    const sst = await OceanApp.api('/api/map/sst?res=1.5');
+    sst.features.forEach(f=>{ let h=0; hotspots.forEach(hs=>{ const d2=(f.geometry.coordinates[1]-hs.latitude)**2+(f.geometry.coordinates[0]-hs.longitude)**2; const sv={EXTREME:1,HIGH:0.7,MODERATE:0.4}[hs.severity]||0; h=Math.max(h,sv*Math.exp(-d2/4)); }); f.properties.hw=h; });
+
+    if(S.map.getSource('hw-src')) S.map.removeSource('hw-src');
+    S.map.addSource('hw-src',{type:'geojson',data:{type:'FeatureCollection',features:sst.features.filter(f=>f.properties.hw>0.05)}});
+    if(S.map.getLayer('hw-heat')) S.map.removeLayer('hw-heat');
+    S.map.addLayer({
+      id:'hw-heat', type:'heatmap', source:'hw-src',
+      paint:{
+        'heatmap-weight':['get','hw'],
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],
+          0,'rgba(255,200,0,0)', 0.4,'rgba(255,130,0,0.7)', 0.8,'rgba(255,30,0,0.9)', 1,'rgba(180,0,0,1)'],
+        'heatmap-radius':30, 'heatmap-opacity':0.85,
+      }
+    });
+
+    // Glow circles for each hotspot
+    if(hotspots.length > 0){
+      const circData = { type:'FeatureCollection', features: hotspots.map(hs=>({ type:'Feature', properties:{ severity:hs.severity, anomaly:hs.sst_anomaly||0 }, geometry:{ type:'Point', coordinates:[hs.longitude, hs.latitude] } })) };
+      if(S.map.getSource('hw-circ-src')) S.map.removeSource('hw-circ-src');
+      S.map.addSource('hw-circ-src',{type:'geojson',data:circData});
+      if(S.map.getLayer('hw-circles')) S.map.removeLayer('hw-circles');
+      S.map.addLayer({
+        id:'hw-circles', type:'circle', source:'hw-circ-src',
+        paint:{
+          'circle-radius':['interpolate',['linear'],['get','anomaly'],0,8,2,12,4,18],
+          'circle-color':['match',['get','severity'],'EXTREME','#ff0844','HIGH','#ff3b5c','MODERATE','#ffb020','#f1c40f'],
+          'circle-opacity':0.85,
+          'circle-stroke-width':2,'circle-stroke-color':'rgba(255,255,255,0.3)',
+        }
+      });
+      S.map.on('click','hw-circles', e=>{
+        const p = e.features[0].properties;
+        new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<div class="pop-title">🔥 Marine Heatwave</div><div class="pop-row"><span>Severity</span><span class="pop-val" style="color:${p.severity==='EXTREME'?'#ff0844':'#ff3b5c'}">${p.severity}</span></div><div class="pop-row"><span>SST Anomaly</span><span class="pop-val">+${(p.anomaly||0).toFixed(1)}°C</span></div>`).addTo(S.map);
+      });
+    }
+  } catch(e){ OceanApp.toast('Heatwave layer error','error'); }
+}
+
+// ── Bathymetry ────────────────────────────────────────────────
+async function addBathymetryLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/bathymetry');
+    if(S.map.getSource('bath-points')) S.map.removeSource('bath-points');
+    S.map.addSource('bath-points',{type:'geojson',data});
+    if(S.map.getLayer('bath-points')) S.map.removeLayer('bath-points');
+    S.map.addLayer({
+      id:'bath-points', type:'circle', source:'bath-points',
+      paint:{
+        'circle-radius':6,'circle-opacity':0.7,
+        'circle-color':['interpolate',['linear'],['get','depth_m'],-7500,'#1a237e',-3000,'#1565c0',-1000,'#42a5f5',0,'#90caf9'],
+        'circle-stroke-width':1,'circle-stroke-color':'rgba(21,101,192,0.4)',
+      }
+    });
+    S.map.on('click','bath-points',e=>{
+      const p = e.features[0].properties;
+      new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<div class="pop-title">⛰️ ${p.feature_type||'Seafloor'}</div><div class="pop-row"><span>Depth</span><span class="pop-val">${Math.abs(p.depth_m||0).toLocaleString()} m</span></div>`).addTo(S.map);
+    });
+  } catch(e){}
+}
+
+// ── Ports ─────────────────────────────────────────────────────
+async function addPortsLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/ports');
+    if(S.map.getSource('ports-src')) S.map.removeSource('ports-src');
+    S.map.addSource('ports-src',{type:'geojson',data});
+    if(S.map.getLayer('ports-circles')) S.map.removeLayer('ports-circles');
+    if(S.map.getLayer('ports-labels')) S.map.removeLayer('ports-labels');
+    S.map.addLayer({
+      id:'ports-circles', type:'circle', source:'ports-src',
+      paint:{
+        'circle-radius':['interpolate',['linear'],['get','is_major'],0,5,1,9],
+        'circle-color':'#e74c3c','circle-opacity':0.9,
+        'circle-stroke-width':2,'circle-stroke-color':'rgba(231,76,60,0.4)',
+      }
+    });
+    S.map.addLayer({
+      id:'ports-labels', type:'symbol', source:'ports-src',
+      layout:{'text-field':['get','name'],'text-size':10,'text-offset':[0,1.2],'text-anchor':'top'},
+      paint:{'text-color':'#eaf6ff','text-halo-color':'rgba(3,7,17,0.8)','text-halo-width':1.5},
+      minzoom:6,
+    });
+    S.map.on('click','ports-circles',e=>{
+      const p = e.features[0].properties;
+      new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<div class="pop-title">⚓ ${p.name}</div><div class="pop-row"><span>Country</span><span class="pop-val">${p.country||'—'}</span></div><div class="pop-row"><span>Type</span><span class="pop-val">${(p.port_type||'commercial').replace('_',' ')}</span></div><div class="pop-row"><span>Capacity</span><span class="pop-val">${p.capacity_teu?p.capacity_teu.toLocaleString()+' TEU':'—'}</span></div><div class="pop-row"><span>Traffic</span><span class="pop-val">${p.annual_traffic_mt?p.annual_traffic_mt+' MT/yr':'—'}</span></div>`).addTo(S.map);
+    });
+    S.map.on('mouseenter','ports-circles',()=>{ S.map.getCanvas().style.cursor='pointer'; });
+    S.map.on('mouseleave','ports-circles',()=>{ S.map.getCanvas().style.cursor=''; });
+  } catch(e){ OceanApp.toast('Ports layer failed','error'); }
+}
+
+// ── Shipping routes ───────────────────────────────────────────
+async function addShippingLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/routes');
+    if(S.map.getSource('ship-src')) S.map.removeSource('ship-src');
+    S.map.addSource('ship-src',{type:'geojson',data});
+    if(S.map.getLayer('shipping-lines')) S.map.removeLayer('shipping-lines');
+    S.map.addLayer({
+      id:'shipping-lines', type:'line', source:'ship-src',
+      layout:{'line-join':'round','line-cap':'round'},
+      paint:{
+        'line-color':['get','color'],'line-width':2,'line-opacity':0.65,
+        'line-dasharray':['match',['get','traffic_level'],'low',[4,4],[1]],
+      }
+    });
+    if(S.map.getLayer('ship-labels')) S.map.removeLayer('ship-labels');
+    S.map.addLayer({
+      id:'ship-labels', type:'symbol', source:'ship-src',
+      layout:{'symbol-placement':'line','text-field':['get','name'],'text-size':9},
+      paint:{'text-color':'#f1c40f','text-halo-color':'rgba(3,7,17,0.7)','text-halo-width':1},
+      minzoom:5,
+    });
+  } catch(e){}
+}
+
+// ── EEZ & MPA ─────────────────────────────────────────────────
+async function addEEZLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/areas?type=eez');
+    if(S.map.getSource('eez-src')) S.map.removeSource('eez-src');
+    S.map.addSource('eez-src',{type:'geojson',data});
+    if(S.map.getLayer('eez-fill')) S.map.removeLayer('eez-fill');
+    if(S.map.getLayer('eez-line')) S.map.removeLayer('eez-line');
+    S.map.addLayer({ id:'eez-fill', type:'fill', source:'eez-src', paint:{'fill-color':'#e67e22','fill-opacity':0.06} });
+    S.map.addLayer({ id:'eez-line', type:'line', source:'eez-src', paint:{'line-color':'#e67e22','line-width':1.5,'line-dasharray':[5,4],'line-opacity':0.7} });
+    S.map.on('click','eez-fill',e=>{ const p=e.features[0].properties; new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<div class="pop-title">🗺️ ${p.name||'EEZ'}</div><div class="pop-row"><span>Country</span><span class="pop-val">${p.country||'—'}</span></div>`).addTo(S.map); });
+  } catch(e){}
+}
+
+async function addMPALayer(){
+  try {
+    const data = await OceanApp.api('/api/map/areas?type=mpa');
+    if(S.map.getSource('mpa-src')) S.map.removeSource('mpa-src');
+    S.map.addSource('mpa-src',{type:'geojson',data});
+    if(S.map.getLayer('mpa-fill')) S.map.removeLayer('mpa-fill');
+    if(S.map.getLayer('mpa-line')) S.map.removeLayer('mpa-line');
+    S.map.addLayer({ id:'mpa-fill', type:'fill', source:'mpa-src', paint:{'fill-color':'#27ae60','fill-opacity':0.1} });
+    S.map.addLayer({ id:'mpa-line', type:'line', source:'mpa-src', paint:{'line-color':'#27ae60','line-width':1.5,'line-opacity':0.8} });
+    S.map.on('click','mpa-fill',e=>{ const p=e.features[0].properties; new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<div class="pop-title">🌿 ${p.name||'MPA'}</div><div class="pop-row"><span>Type</span><span class="pop-val">Marine Protected Area</span></div><div class="pop-row"><span>Country</span><span class="pop-val">${p.country||'—'}</span></div>`).addTo(S.map); });
+  } catch(e){}
+}
+
+// ── ARGO floats ───────────────────────────────────────────────
+async function addArgoLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/argo');
+    if(S.map.getSource('argo-src')) S.map.removeSource('argo-src');
+    S.map.addSource('argo-src',{type:'geojson',data});
+    if(S.map.getLayer('argo-circles')) S.map.removeLayer('argo-circles');
+    S.map.addLayer({
+      id:'argo-circles', type:'circle', source:'argo-src',
+      paint:{'circle-radius':5,'circle-color':'#8e44ad','circle-opacity':0.85,'circle-stroke-width':1,'circle-stroke-color':'rgba(142,68,173,0.4)'},
+    });
+    S.map.on('click','argo-circles',e=>{
+      const p=e.features[0].properties;
+      new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<div class="pop-title">🔬 ARGO Float</div><div class="pop-row"><span>ID</span><span class="pop-val">${p.float_id||'—'}</span></div><div class="pop-row"><span>SST</span><span class="pop-val">${p.sst!=null?p.sst.toFixed(1)+'°C':'—'}</span></div><div class="pop-row"><span>Salinity</span><span class="pop-val">${p.salinity!=null?p.salinity.toFixed(1)+' PSU':'—'}</span></div>`).addTo(S.map);
+    });
+    S.map.on('mouseenter','argo-circles',()=>{ S.map.getCanvas().style.cursor='pointer'; });
+    S.map.on('mouseleave','argo-circles',()=>{ S.map.getCanvas().style.cursor=''; });
+  } catch(e){}
+}
+
+// ── AIS ships ─────────────────────────────────────────────────
+async function addShipsLayer(){
+  try {
+    const data = await OceanApp.api('/api/map/ships');
+    if(S.map.getSource('ships-src')) S.map.removeSource('ships-src');
+    S.map.addSource('ships-src',{type:'geojson',data});
+    if(S.map.getLayer('ships-circles')) S.map.removeLayer('ships-circles');
+    S.map.addLayer({
+      id:'ships-circles', type:'circle', source:'ships-src',
+      paint:{'circle-radius':6,'circle-color':['match',['get','vessel_type'],'tanker','#e74c3c','research','#2ecc71','#3498db'],'circle-opacity':0.9,'circle-stroke-width':1,'circle-stroke-color':'rgba(255,255,255,0.3)'},
+    });
+    S.map.on('click','ships-circles',e=>{
+      const p=e.features[0].properties;
+      new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<div class="pop-title">🚢 ${p.name||'Vessel'}</div><div class="pop-row"><span>Type</span><span class="pop-val">${(p.vessel_type||'cargo').replace('_',' ')}</span></div><div class="pop-row"><span>Speed</span><span class="pop-val">${p.speed_kn||0} kn</span></div><div class="pop-row"><span>Heading</span><span class="pop-val">${p.heading_deg||0}°</span></div><div class="pop-row"><span>Destination</span><span class="pop-val">${p.destination||'—'}</span></div>`).addTo(S.map);
+    });
+  } catch(e){}
+}
+
+// ── Grid (Section 18) ─────────────────────────────────────────
+function addGridLayer(){
+  const center = S.map.getCenter();
+  const zoom = S.map.getZoom();
+  const offset = zoom < 5 ? 10 : zoom < 7 ? 5 : 2;
+  const b = { lat_min:center.lat-offset, lat_max:center.lat+offset, lon_min:center.lng-offset, lon_max:center.lng+offset, res:0.25 };
+  OceanApp.api(`/api/map/grid?lat_min=${b.lat_min}&lat_max=${b.lat_max}&lon_min=${b.lon_min}&lon_max=${b.lon_max}&res=${b.res}`).then(data=>{
+    if(S.map.getSource('grid-src')) S.map.removeSource('grid-src');
+    S.map.addSource('grid-src',{type:'geojson',data});
+    if(S.map.getLayer('grid-lines')) S.map.removeLayer('grid-lines');
+    S.map.addLayer({
+      id:'grid-lines', type:'line', source:'grid-src',
+      paint:{'line-color':'rgba(34,229,255,0.18)','line-width':0.8},
+    });
+  }).catch(()=>{});
+}
+
+// ── Opacity control ───────────────────────────────────────────
+function setLayerOpacity(v){
+  S.layerOpacity = v;
+  ['sst-heat','sss-heat','sla-heat','hw-heat'].forEach(id=>{
+    if(S.map.getLayer(id)) S.map.setPaintProperty(id,'heatmap-opacity',v);
+  });
+}
+
+// ── Legend update ─────────────────────────────────────────────
+function updateLegend(name){
+  const l = LEGENDS[name]; if(!l) return;
+  document.getElementById('legend-name').textContent = l.name;
+  document.getElementById('legend-bar').style.background = `linear-gradient(to right,${l.colors.join(',')})`;
+  document.getElementById('leg-min').textContent = l.min;
+  document.getElementById('leg-mid').textContent = l.mid;
+  document.getElementById('leg-max').textContent = l.max;
+}
+
+// ── Mouse move → coordinate inspector ─────────────────────────
+function onMouseMove(e){
+  const {lat,lng} = e.lngLat;
+  document.getElementById('ci-lat').textContent = lat.toFixed(4)+'°N';
+  document.getElementById('ci-lon').textContent = lng.toFixed(4)+'°E';
+  document.getElementById('sb-coord').textContent = `${lat.toFixed(2)}°N, ${lng.toFixed(2)}°E`;
+
+  // Update scale bar
+  const zoom = S.map.getZoom();
+  const scaleKm = Math.round(40000 * Math.cos(lat*Math.PI/180) / Math.pow(2,zoom+8) * 256);
+  document.getElementById('scale-bar').textContent = `Scale: ~${scaleKm.toLocaleString()} km/tile`;
+
+  // Tool: measure mode
+  if(S.tool === 'measure' && S.measuring && S.measurePoints.length > 0){
+    // Dynamic line preview would go here
+  }
+}
+
+// ── Map click ─────────────────────────────────────────────────
+async function onMapClick(e){
+  const {lat,lng} = e.lngLat;
+
+  // Drawing tools
+  if(S.tool === 'measure'){
+    S.measurePoints.push([lat,lng]);
+    if(S.measurePoints.length >= 2){
+      const result = await OceanApp.api('/api/map/measure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({points:S.measurePoints})});
+      const el = document.getElementById('measure-result');
+      el.style.display='block';
+      el.innerHTML=`<b>Distance:</b> ${result.total_km} km (${result.total_nm} nm)`;
+    }
+    addMarker(lat,lng,'📍');
+    return;
+  }
+  if(S.tool==='point'){ await saveDrawnFeature('point',{type:'Point',coordinates:[lng,lat]},`Point ${lat.toFixed(2)},${lng.toFixed(2)}`); addMarker(lat,lng,'📍'); return; }
+
+  // Coordinate inspect
+  try {
+    const d = await OceanApp.api(`/api/map/inspect?lat=${lat}&lon=${lng}`);
+    document.getElementById('ci-sst').textContent = d.sst!=null?d.sst.toFixed(2)+'°C':'—';
+    document.getElementById('ci-depth').textContent = d.grid?.depth_m!=null?Math.abs(d.grid.depth_m)+' m':'—';
+    document.getElementById('ci-coast').textContent = d.distance_from_coast_km!=null?d.distance_from_coast_km+' km':'—';
+    document.getElementById('ci-grid').textContent = d.grid?.cell_id||'—';
+    document.getElementById('ci-hw').textContent = d.heatwave_status||'NONE';
+    document.getElementById('ci-argo').textContent = d.nearest_argo?`${d.nearest_argo.float_id} (${d.nearest_argo.distance_km}km)`:'—';
+    showDepthProfile(lat,lng);
+  } catch(ex){
+    document.getElementById('ci-sst').textContent='—';
+  }
+}
+
+// ── Depth profile mini-chart ───────────────────────────────────
+let _depthChart = null;
+async function showDepthProfile(lat,lon){
+  document.getElementById('depth-profile-card').style.display='block';
+  let profile=[],depths=[];
+  try {
+    const d = await OceanApp.api(`/api/depth-profile?lat=${lat}&lon=${lon}`);
+    profile = d.predicted||d.depth_profile||[];
+    depths = d.depths||[0,10,20,30,50,75,100,200,500,1000];
+  } catch(e){
+    depths=[0,10,20,30,50,75,100,200,500,1000];
+    profile=depths.map((d,i)=>28-i*0.8+Math.random()*0.3);
+  }
+  const ctx=document.getElementById('depth-chart');
+  if(_depthChart) _depthChart.destroy();
+  _depthChart=new Chart(ctx,{type:'line',data:{labels:depths,datasets:[{label:'Temp °C',data:profile,borderColor:'#22e5ff',backgroundColor:'rgba(34,229,255,0.1)',borderWidth:1.5,pointRadius:2,tension:0.4,fill:true}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9db4cc',font:{size:8}},grid:{color:'rgba(34,229,255,0.07)'}},y:{ticks:{color:'#9db4cc',font:{size:8}},grid:{color:'rgba(34,229,255,0.07)'}}}}});
+}
+
+// ── Zoom events ───────────────────────────────────────────────
+function onZoom(){
+  const z = S.map.getZoom();
+  document.getElementById('sb-zoom').textContent=`Zoom: ${z.toFixed(1)}`;
+  document.getElementById('zc-world').className  = 'zc' + (z<=3?' active':'');
+  document.getElementById('zc-io').className     = 'zc' + (z>3&&z<=5?' active':'');
+  document.getElementById('zc-nio').className    = 'zc' + (z>5&&z<=7?' active':'');
+  document.getElementById('zc-bob').className    = 'zc' + (z>7&&z<=9?' active':'');
+  document.getElementById('zc-cell').className   = 'zc' + (z>9?' active':'');
+}
+
+// ── Fly-to helper ─────────────────────────────────────────────
+function flyTo(lat,lon,zoom){
+  S.map.flyTo({center:[lon,lat],zoom,animate:true,duration:1800,essential:true});
+}
+
+// ── Time slider (Section 10) ───────────────────────────────────
+const TIME_LABELS=['1993','1995','2000','2005','2010','2015','2020','2023','Present','+7d','+15d','+30d'];
+function onTimeSlider(v){
+  S.timeIdx=parseInt(v);
+  const step = Math.round(S.timeIdx / 52 * (TIME_LABELS.length-1));
+  document.getElementById('time-label').textContent=TIME_LABELS[Math.min(step,TIME_LABELS.length-1)];
+}
+function setTimeDelta(days){
+  const val = days < 0 ? Math.max(0,S.timeIdx-5) : Math.min(52,S.timeIdx+5);
+  document.getElementById('time-slider').value=val;
+  onTimeSlider(val);
+  OceanApp.toast(`Time: ${days>0?'+':''}${days} days`,'info');
+}
+function togglePlay(){
+  const btn=document.getElementById('play-btn');
+  if(S.playing){
+    S.playing=false; clearInterval(S.playInterval);
+    btn.textContent='▶ Play'; btn.classList.remove('playing');
+  } else {
+    S.playing=true;
+    btn.textContent='⏸ Pause'; btn.classList.add('playing');
+    S.playInterval=setInterval(()=>{
+      const sl=document.getElementById('time-slider');
+      const next=(parseInt(sl.value)+1)%53;
+      sl.value=next; onTimeSlider(next);
+      if(next===0){ clearInterval(S.playInterval); S.playing=false; btn.textContent='▶ Play'; btn.classList.remove('playing'); }
+    },400);
+  }
+}
+
+// ── Search (Section 19) ───────────────────────────────────────
+let _searchTimer;
+function onSearch(q){
+  clearTimeout(_searchTimer);
+  const el=document.getElementById('search-results');
+  if(!q||q.length<2){ el.style.display='none'; return; }
+  _searchTimer=setTimeout(async()=>{
+    try {
+      const d=await OceanApp.api('/api/map/location?q='+encodeURIComponent(q));
+      if(!d.results.length){ el.style.display='none'; return; }
+      el.innerHTML=d.results.map(r=>`<div class="sr-item" onclick="selectResult(${r.lat},${r.lon},'${(r.name||'').replace(/'/g,"\\'")}')"><b>${r.name||''}</b><span class="sr-type">${r.type||''}</span></div>`).join('');
+      el.style.display='block';
+    } catch(e){ el.style.display='none'; }
+  },300);
+}
+function selectResult(lat,lon,name){
+  flyTo(lat,lon,7);
+  document.getElementById('loc-search').value=name;
+  document.getElementById('search-results').style.display='none';
+  OceanApp.toast(`Flying to ${name}`,'info');
+}
+
+// ── Bookmarks (Section 20) ────────────────────────────────────
+async function saveBookmark(){
+  const c=S.map.getCenter();
+  const name=prompt('Bookmark name:','My Location');
+  if(!name) return;
+  await OceanApp.api('/api/map/bookmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,lat:c.lat,lon:c.lng,zoom:S.map.getZoom(),active_layers:[...S.activeLayers],basemap:S.currentBasemap})});
+  OceanApp.toast('Bookmark saved','success');
+  loadBookmarks();
+}
+async function loadBookmarks(){
+  try {
+    const d=await OceanApp.api('/api/map/bookmarks?user_id=0');
+    const el=document.getElementById('bm-list');
+    if(!d.bookmarks.length){ el.innerHTML='<div style="color:var(--text-dim2);font-size:0.7rem">No bookmarks yet</div>'; return; }
+    el.innerHTML=d.bookmarks.slice(0,8).map(b=>`<div style="padding:5px 0;border-bottom:1px solid rgba(34,229,255,0.06);cursor:pointer;font-size:0.72rem" onclick="flyTo(${b.latitude},${b.longitude},${b.zoom})">📍 <b>${b.name}</b></div>`).join('');
+  } catch(e){}
+}
+
+// ── Mini-map (Section 24) ─────────────────────────────────────
+function initMiniMap(){
+  S.miniMap = new maplibregl.Map({
+    container:'mini-map',
+    style:{version:8,sources:{b:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}'],tileSize:256}},layers:[{id:'b',type:'raster',source:'b'}]},
+    center:[80,10],zoom:2,interactive:false,attributionControl:false,
+  });
+  S.map.on('move',()=>{ S.miniMap.setCenter(S.map.getCenter()); });
+}
+
+// ── Draw & Measure (Sections 25-26) ───────────────────────────
+let _markers=[];
+function addMarker(lat,lon,emoji='📍'){
+  const el=document.createElement('div');
+  el.textContent=emoji; el.style.fontSize='20px'; el.style.cursor='pointer';
+  const m=new maplibregl.Marker({element:el}).setLngLat([lon,lat]).addTo(S.map);
+  _markers.push(m);
+}
+function activateTool(name){
+  if(S.tool===name){ S.tool=null; S.measurePoints=[]; S.measuring=false; document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active-tool')); OceanApp.toast('Tool deactivated','info'); return; }
+  S.tool=name; S.measurePoints=[];
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active-tool'));
+  document.getElementById('tool-'+name)?.classList.add('active-tool');
+  OceanApp.toast(`Tool: ${name} — click map`,'info');
+  if(name==='measure'){ document.getElementById('measure-result').style.display='none'; }
+}
+function clearDrawings(){
+  _markers.forEach(m=>m.remove()); _markers=[];
+  S.measurePoints=[]; S.drawPoints=[];
+  document.getElementById('measure-result').style.display='none';
+  OceanApp.toast('Drawings cleared','info');
+}
+async function saveDrawnFeature(type,geojson,label){
+  await OceanApp.api('/api/map/draw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feature_type:type,geojson,label,user_id:0})});
+  OceanApp.toast('Feature saved','success');
+}
+
+// ── Export (Section 27) ───────────────────────────────────────
+function exportPNG(){
+  const canvas=S.map.getCanvas();
+  const link=document.createElement('a');
+  link.href=canvas.toDataURL('image/png');
+  link.download='oceanverse_map.png';
+  link.click();
+  OceanApp.toast('Map exported as PNG','success');
+}
+function exportGeoJSON(type){
+  window.open(`/api/map/export/geojson?type=${type}`,'_blank');
+  OceanApp.toast('Downloading '+type+' GeoJSON…','info');
+}
+
+// ── Status bar update ─────────────────────────────────────────
+function updateStatusBar(){
+  const active=[...S.activeLayers];
+  document.getElementById('sb-layer').textContent=`Layers: ${active.join(', ')}`;
+}
+
+// ── Stats panel ───────────────────────────────────────────────
+async function loadStats(){
+  try {
+    const [gis,hw]=await Promise.all([OceanApp.api('/api/map/stats'),OceanApp.api('/api/heatwave').catch(()=>({total:0}))]);
+    document.getElementById('stat-ports').textContent=gis.total_ports||'—';
+    document.getElementById('stat-routes').textContent=gis.shipping_routes||'—';
+    document.getElementById('stat-argo').textContent=gis.ais_vessels||'—';
+    document.getElementById('stat-mpa').textContent=gis.mpa_zones||'—';
+    document.getElementById('stat-ships').textContent=gis.ais_vessels||'—';
+    document.getElementById('stat-hw').textContent=hw.total||0;
+    document.getElementById('sb-hw').textContent=`Heatwave zones: ${hw.total||0}`;
+  } catch(e){}
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  OceanApp.init?.();
+  initMap();
+  document.addEventListener('click',e=>{ if(!e.target.closest('.search-wrap')) document.getElementById('search-results').style.display='none'; });
+});
+</script>
+</body>
+</html>

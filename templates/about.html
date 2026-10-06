@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About — Ocean Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/earth">Digital Twin</a>
+    <a href="/gismap">GIS Map</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/heatwave">Heatwave</a>
+    <a href="/voice">Voice AI</a>
+    <a href="/about" class="active">About</a>
+  </div>
+</nav>
+
+<div class="container" style="padding-top:110px;padding-bottom:70px;max-width:900px">
+  <h1 style="margin-bottom:8px">North Indian Ocean Intelligence Platform</h1>
+  <p style="color:var(--cyan);font-size:0.85rem;margin-bottom:30px">Smart India Hackathon — AI Ocean Digital Twin</p>
+
+  <div class="glass-card" style="padding:26px;margin-bottom:20px">
+    <h3 style="font-size:1rem;margin-bottom:10px;color:var(--cyan)">Mission</h3>
+    <p style="color:var(--text-secondary);line-height:1.7;font-size:0.9rem">
+      This platform reconstructs subsurface ocean temperature across 15 depth levels (0–1000m) for the
+      North Indian Ocean using satellite-derived surface observations (SST, SSS, SLA, winds, currents)
+      fed through a physics-guided CNN encoder–decoder architecture with spatial attention. It detects
+      marine heatwaves, predicts their downstream impacts, and validates every prediction independently
+      against ARGO float observations — which are never used in training.
+    </p>
+  </div>
+
+  <div class="widget-grid cols-3" style="margin-bottom:20px">
+    <div class="glass-card">
+      <div class="card-title">Data Engineering</div>
+      <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:8px">
+        Phase 1–2: dataset scanning, QC, harmonization to a common 0.25° daily grid across 15 standard depths.
+      </p>
+    </div>
+    <div class="glass-card">
+      <div class="card-title">AI Core</div>
+      <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:8px">
+        Phase 3: CNN satellite embedding, physics-guided loss, marine heatwave intelligence, explainable AI, uncertainty quantification.
+      </p>
+    </div>
+    <div class="glass-card">
+      <div class="card-title">Digital Twin</div>
+      <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:8px">
+        Full-stack Flask + Three.js holographic Earth with live ARGO floats, depth diving, and voice-driven navigation.
+      </p>
+    </div>
+  </div>
+
+  <div class="glass-card" style="padding:26px">
+    <h3 style="font-size:1rem;margin-bottom:10px;color:var(--cyan)">Tech Stack</h3>
+    <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8">
+      <strong>Backend:</strong> Flask · Flask-SocketIO · SQLite · PyTorch · Xarray · Pandas · NumPy<br/>
+      <strong>Frontend:</strong> HTML5 · CSS3 · JavaScript ES6 · Three.js · Chart.js · GSAP-style CSS animation
+    </p>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>OceanVerse Digital Twin — 3D Ocean Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/glassmorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/animations.css') }}">
+<style>
+body { overflow: hidden; background: #000; }
+
+/* ── Full canvas ── */
+#twin-canvas { position:fixed;inset:0;z-index:1; }
+.glass-nav { z-index:700; }
+
+/* ── HUD panels ── */
+.hud { position:fixed;z-index:500;backdrop-filter:blur(18px); }
+
+.hud-panel {
+  background:rgba(4,10,22,0.85);
+  border:1px solid rgba(34,229,255,0.18);
+  border-radius:12px;
+  padding:12px 14px;
+  box-shadow:0 6px 28px rgba(0,0,0,0.6);
+  margin-bottom:8px;
+}
+
+.hp-title {
+  font-family:var(--font-display);
+  font-size:0.58rem;
+  letter-spacing:0.12em;
+  color:var(--cyan);
+  text-transform:uppercase;
+  margin-bottom:9px;
+  display:flex;align-items:center;gap:6px;
+}
+.hp-title::before { content:'';width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan);flex-shrink:0; }
+
+/* Left panel */
+.hud-left { top:58px;left:0;width:248px;max-height:calc(100vh - 66px);overflow-y:auto;padding:8px 10px 60px;scrollbar-width:thin;scrollbar-color:rgba(34,229,255,0.2) transparent; }
+
+/* Right panel */
+.hud-right { top:58px;right:0;width:248px;max-height:calc(100vh - 66px);overflow-y:auto;padding:8px 10px 60px;scrollbar-width:thin;scrollbar-color:rgba(34,229,255,0.2) transparent; }
+
+/* Bottom bar */
+.hud-bottom { bottom:0;left:0;right:0;background:rgba(2,6,14,0.9);border-top:1px solid rgba(34,229,255,0.1);padding:6px 18px;display:flex;align-items:center;gap:16px;font-size:0.68rem;color:var(--text-secondary);overflow-x:auto; }
+.hbc { display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0; }
+.hbc .dot { width:5px;height:5px;border-radius:50%; }
+.dot-green  { background:var(--accent-success);box-shadow:0 0 5px var(--accent-success); }
+.dot-cyan   { background:var(--cyan);box-shadow:0 0 5px var(--cyan); }
+.dot-warn   { background:var(--accent-warn);box-shadow:0 0 5px var(--accent-warn); }
+.dot-red    { background:var(--accent-danger);box-shadow:0 0 5px var(--accent-danger); }
+
+/* Layer toggles */
+.layer-grid { display:grid;grid-template-columns:1fr 1fr;gap:4px; }
+.lb { display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:7px;border:1px solid rgba(34,229,255,0.1);background:rgba(255,255,255,0.02);color:var(--text-dim2);font-size:0.64rem;font-family:var(--font-body);letter-spacing:0.03em;cursor:pointer;transition:all 130ms;text-transform:uppercase;font-weight:600; }
+.lb:hover { border-color:rgba(34,229,255,0.3);color:var(--text-primary); }
+.lb.on { border-color:var(--cyan);color:var(--cyan);background:rgba(34,229,255,0.08);box-shadow:0 0 6px rgba(34,229,255,0.12); }
+.ld { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+
+/* Depth slider */
+.depth-track { display:flex;flex-direction:column;gap:4px; }
+.ds-row { display:flex;align-items:center;gap:8px; }
+.ds-slider { flex:1;-webkit-appearance:none;height:3px;background:linear-gradient(to right,var(--cyan),#1565c0);border-radius:2px; }
+.ds-slider::-webkit-slider-thumb { -webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);cursor:pointer; }
+.ds-label { font-family:var(--font-display);font-size:0.68rem;color:var(--cyan);min-width:50px;text-align:right; }
+.depth-tick-row { display:flex;justify-content:space-between;font-size:0.56rem;color:var(--text-dim2);margin-top:2px; }
+
+/* Timeline */
+.tl-row { display:flex;align-items:center;gap:7px; }
+.tl-slider { flex:1;-webkit-appearance:none;height:3px;background:rgba(34,229,255,0.2);border-radius:2px; }
+.tl-slider::-webkit-slider-thumb { -webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#ffb020;box-shadow:0 0 6px #ffb020;cursor:pointer; }
+.tl-label { font-family:var(--font-display);font-size:0.66rem;color:#ffb020;min-width:54px;text-align:right; }
+.tl-btns { display:flex;gap:4px;margin-top:6px; }
+.tl-btn { flex:1;padding:5px;border:1px solid rgba(34,229,255,0.15);border-radius:6px;background:transparent;color:var(--text-secondary);font-size:0.64rem;cursor:pointer;font-family:var(--font-body);transition:all 130ms; }
+.tl-btn:hover { border-color:var(--cyan);color:var(--cyan); }
+.tl-btn.playing { border-color:var(--accent-success);color:var(--accent-success); }
+
+/* Coordinate HUD */
+.ci-row { display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(34,229,255,0.06);font-size:0.72rem; }
+.ci-row:last-child { border-bottom:none; }
+.ci-lbl { color:var(--text-dim2);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em; }
+.ci-val { color:var(--cyan);font-family:var(--font-display);font-size:0.72rem; }
+
+/* Stat rows */
+.stat-row { display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(34,229,255,0.06);font-size:0.72rem; }
+.stat-row:last-child { border-bottom:none; }
+.stat-val { color:var(--cyan);font-family:var(--font-display); }
+
+/* Camera dock */
+.cam-dock { display:flex;flex-direction:column;gap:4px; }
+.cam-btn { width:100%;padding:7px 10px;border:1px solid rgba(34,229,255,0.15);border-radius:7px;background:rgba(255,255,255,0.02);color:var(--text-secondary);font-size:0.68rem;cursor:pointer;font-family:var(--font-body);transition:all 130ms;text-align:left; }
+.cam-btn:hover { border-color:var(--cyan);color:var(--cyan);background:rgba(34,229,255,0.05); }
+.cam-btn.active-step { border-color:var(--cyan);color:var(--cyan);background:rgba(34,229,255,0.08); }
+
+/* Mode buttons */
+.mode-grid { display:grid;grid-template-columns:1fr 1fr;gap:4px; }
+.mode-btn { padding:7px 6px;border:1px solid rgba(34,229,255,0.15);border-radius:7px;background:rgba(255,255,255,0.02);color:var(--text-secondary);font-size:0.64rem;cursor:pointer;font-family:var(--font-body);transition:all 130ms;text-align:center;letter-spacing:0.03em; }
+.mode-btn:hover { border-color:var(--cyan);color:var(--cyan); }
+.mode-btn.active { border-color:#ffb020;color:#ffb020;background:rgba(255,176,32,0.08); }
+
+/* Legend bar */
+.leg-bar { height:8px;border-radius:4px; }
+.leg-labels { display:flex;justify-content:space-between;font-size:0.58rem;color:var(--text-dim2); }
+
+/* Zoom crumbs */
+.crumb-bar { position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:4px;align-items:center;background:rgba(2,6,14,0.82);border:1px solid rgba(34,229,255,0.12);border-radius:999px;padding:5px 14px;backdrop-filter:blur(12px);pointer-events:none; }
+.zc { font-size:0.62rem;color:var(--text-dim2);font-family:var(--font-display);letter-spacing:0.04em; }
+.zc.active { color:var(--cyan); }
+.zc+.zc::before { content:' › ';color:rgba(34,229,255,0.3);margin-right:4px; }
+
+/* AI Explain popup */
+.ai-popup { position:fixed;bottom:50px;left:50%;transform:translateX(-50%);z-index:600;max-width:480px;width:90%;background:rgba(4,10,22,0.96);border:1px solid rgba(34,229,255,0.3);border-radius:14px;padding:16px 18px;backdrop-filter:blur(20px);box-shadow:0 12px 40px rgba(0,0,0,0.7);display:none; }
+.ai-popup.show { display:block;animation:fadeUp 250ms ease; }
+@keyframes fadeUp { from { opacity:0;transform:translateX(-50%) translateY(10px); } }
+.ai-popup-title { font-family:var(--font-display);font-size:0.7rem;color:var(--cyan);margin-bottom:10px;letter-spacing:0.1em; }
+.ai-popup-text { font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px; }
+.shap-bar { display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:0.68rem; }
+.shap-name { color:var(--text-dim2);min-width:80px; }
+.shap-track { flex:1;height:4px;background:rgba(34,229,255,0.1);border-radius:2px;overflow:hidden; }
+.shap-fill { height:100%;background:var(--cyan);border-radius:2px; }
+.shap-val { color:var(--cyan);font-family:var(--font-display);font-size:0.68rem;min-width:36px;text-align:right; }
+
+/* Loading */
+#twin-loading { position:fixed;inset:0;z-index:800;background:rgba(2,6,14,0.92);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:opacity 400ms; }
+#twin-loading.hidden { opacity:0;pointer-events:none; }
+.twin-spin { width:52px;height:52px;border-radius:50%;border:3px solid rgba(34,229,255,0.1);border-top-color:var(--cyan);animation:spin 700ms linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.twin-spin-txt { font-family:var(--font-display);font-size:0.66rem;color:var(--cyan);letter-spacing:0.12em;margin-top:14px; }
+.twin-progress { width:180px;height:3px;background:rgba(34,229,255,0.1);border-radius:2px;margin-top:10px;overflow:hidden; }
+.twin-prog-fill { height:100%;background:var(--cyan);border-radius:2px;transition:width 400ms ease; }
+
+/* VR button */
+.vr-btn { width:100%;padding:8px;border:1px solid rgba(142,68,173,0.4);border-radius:8px;background:rgba(142,68,173,0.08);color:#8e44ad;font-size:0.7rem;cursor:pointer;font-family:var(--font-body);transition:all 150ms;margin-top:4px; }
+.vr-btn:hover { border-color:#9b59b6;background:rgba(142,68,173,0.15); }
+
+/* Dive mode overlay */
+#dive-overlay { position:fixed;inset:0;z-index:400;pointer-events:none;background:transparent;transition:background 800ms; }
+#dive-overlay.underwater { background:radial-gradient(ellipse at center,rgba(0,40,100,0.35) 0%,rgba(0,20,60,0.55) 100%); }
+#depth-indicator { position:fixed;top:50%;right:262px;transform:translateY(-50%);z-index:500;writing-mode:vertical-rl;font-family:var(--font-display);font-size:0.62rem;color:var(--cyan);letter-spacing:0.1em;opacity:0;transition:opacity 400ms; }
+#depth-indicator.show { opacity:1; }
+
+@media (max-width:768px) { .hud-left,.hud-right { display:none; } }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="glass-nav">
+  <div class="logo"><span class="logo-dot"></span> OCEAN INTELLIGENCE</div>
+  <div class="nav-links">
+    <a href="/">Home</a><a href="/earth">Earth (Legacy)</a>
+    <a href="/twin" class="active">Digital Twin</a>
+    <a href="/map">GIS Map</a><a href="/dashboard">Dashboard</a>
+    <a href="/heatwave">Heatwave</a><a href="/admin">Admin</a>
+  </div>
+  <div style="font-size:0.72rem;color:var(--text-dim2)"><span id="live-date"></span> · <span id="live-utc"></span></div>
+</nav>
+
+<!-- Zoom breadcrumbs -->
+<div class="crumb-bar">
+  <span class="zc active" id="zc-0">Earth</span>
+  <span class="zc" id="zc-1">Asia</span>
+  <span class="zc" id="zc-2">India</span>
+  <span class="zc" id="zc-3">N. Indian Ocean</span>
+  <span class="zc" id="zc-4">Bay of Bengal</span>
+  <span class="zc" id="zc-5">0.25° Grid</span>
+</div>
+
+<!-- Loading overlay -->
+<div id="twin-loading">
+  <div style="text-align:center">
+    <div class="twin-spin"></div>
+    <div class="twin-spin-txt" id="twin-load-lbl">Initialising Digital Twin</div>
+    <div class="twin-progress"><div class="twin-prog-fill" id="twin-prog" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- 3D Canvas -->
+<canvas id="twin-canvas"></canvas>
+
+<!-- Dive overlay -->
+<div id="dive-overlay"></div>
+<div id="depth-indicator">DEPTH: <span id="di-val">0 m</span></div>
+
+<!-- ══ LEFT HUD ══════════════════════════════════════════════ -->
+<div class="hud hud-left">
+
+  <!-- Camera fly sequence -->
+  <div class="hud-panel">
+    <div class="hp-title">Camera Fly-Through</div>
+    <div class="cam-dock" id="cam-dock"></div>
+  </div>
+
+  <!-- 3D Layers -->
+  <div class="hud-panel">
+    <div class="hp-title">3D Ocean Layers</div>
+    <div class="layer-grid">
+      <button class="lb on" id="lb-volume"    onclick="toggleLayer('volume',this)">   <span class="ld" style="background:#22e5ff"></span>Volume</button>
+      <button class="lb on" id="lb-thermo"    onclick="toggleLayer('thermo',this)">   <span class="ld" style="background:#9b59b6"></span>Thermo</button>
+      <button class="lb on" id="lb-current"   onclick="toggleLayer('current',this)">  <span class="ld" style="background:#22e5ff"></span>Currents</button>
+      <button class="lb on" id="lb-wind"      onclick="toggleLayer('wind',this)">     <span class="ld" style="background:#2ee6a8"></span>Wind</button>
+      <button class="lb on" id="lb-wave"      onclick="toggleLayer('wave',this)">     <span class="ld" style="background:#3498db"></span>Waves</button>
+      <button class="lb on" id="lb-heatwave"  onclick="toggleLayer('heatwave',this)"> <span class="ld" style="background:#ff3b5c"></span>Heatwave</button>
+      <button class="lb on" id="lb-bathymetry"onclick="toggleLayer('bathymetry',this)"><span class="ld" style="background:#1565c0"></span>Seafloor</button>
+      <button class="lb on" id="lb-coral"     onclick="toggleLayer('coral',this)">    <span class="ld" style="background:#27ae60"></span>Coral</button>
+    </div>
+  </div>
+
+  <!-- Objects -->
+  <div class="hud-panel">
+    <div class="hp-title">Ocean Objects</div>
+    <div class="layer-grid">
+      <button class="lb on" id="lb-argo"      onclick="toggleLayer('argo',this)">     <span class="ld" style="background:#8e44ad"></span>ARGO</button>
+      <button class="lb on" id="lb-ships"     onclick="toggleLayer('ships',this)">    <span class="ld" style="background:#3498db"></span>Ships</button>
+      <button class="lb on" id="lb-satellites"onclick="toggleLayer('satellites',this)"><span class="ld" style="background:#f1c40f"></span>Satellites</button>
+      <button class="lb on" id="lb-buoys"     onclick="toggleLayer('buoys',this)">    <span class="ld" style="background:#e67e22"></span>Buoys</button>
+      <button class="lb on" id="lb-gliders"   onclick="toggleLayer('gliders',this)">  <span class="ld" style="background:#e74c3c"></span>Gliders</button>
+      <button class="lb"    id="lb-clouds"    onclick="toggleLayer('clouds',this)">   <span class="ld" style="background:#ecf0f1"></span>Clouds</button>
+    </div>
+  </div>
+
+  <!-- Depth slider (Section 6) -->
+  <div class="hud-panel">
+    <div class="hp-title">Ocean Dive — Depth</div>
+    <div class="depth-track">
+      <div class="ds-row">
+        <input class="ds-slider" type="range" id="depth-slider" min="0" max="14" value="0"
+          oninput="onDepthSlider(this.value)">
+        <span class="ds-label" id="depth-val">0 m</span>
+      </div>
+      <div class="depth-tick-row">
+        <span>Surf</span><span>100m</span><span>500m</span><span>1500m</span>
+      </div>
+    </div>
+    <button class="cam-btn" style="margin-top:8px" onclick="toggleDiveMode()" id="dive-btn">🤿 Enter Dive Mode</button>
+  </div>
+
+  <!-- Timeline (Section 20) -->
+  <div class="hud-panel">
+    <div class="hp-title">Timeline Playback</div>
+    <div class="tl-row">
+      <input class="tl-slider" type="range" id="tl-slider" min="0" max="12" value="9"
+        oninput="onTimeline(this.value)">
+      <span class="tl-label" id="tl-label">2024</span>
+    </div>
+    <div class="tl-btns">
+      <button class="tl-btn" onclick="jumpTimeline(0)">◀◀ 2015</button>
+      <button class="tl-btn" id="tl-play" onclick="toggleTimelinePlay()">▶ Play</button>
+      <button class="tl-btn" onclick="jumpTimeline(12)">2027 ▶▶</button>
+    </div>
+  </div>
+
+  <!-- Presentation / Cinema mode (Section 21) -->
+  <div class="hud-panel">
+    <div class="hp-title">Modes</div>
+    <div class="mode-grid">
+      <button class="mode-btn" id="mode-auto"    onclick="setMode('auto')">🎬 Cinema</button>
+      <button class="mode-btn" id="mode-manual"  onclick="setMode('manual')">🖱️ Manual</button>
+      <button class="mode-btn" id="mode-day"     onclick="setMode('day')">☀️ Day</button>
+      <button class="mode-btn" id="mode-night"   onclick="setMode('night')">🌙 Night</button>
+    </div>
+    <button class="vr-btn" onclick="launchVR()" id="vr-btn">🥽 Enter VR Mode (WebXR)</button>
+  </div>
+
+</div><!-- /left -->
+
+<!-- ══ RIGHT HUD ═════════════════════════════════════════════ -->
+<div class="hud hud-right">
+
+  <!-- Coordinate inspector -->
+  <div class="hud-panel">
+    <div class="hp-title">Coordinate Inspector</div>
+    <div class="ci-row"><span class="ci-lbl">Latitude</span><span class="ci-val" id="ci-lat">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Longitude</span><span class="ci-val" id="ci-lon">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Depth</span><span class="ci-val" id="ci-depth">0 m</span></div>
+    <div class="ci-row"><span class="ci-lbl">SST</span><span class="ci-val" id="ci-sst">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Thermocline</span><span class="ci-val" id="ci-thermo">—</span></div>
+    <div class="ci-row"><span class="ci-lbl">Heatwave</span><span class="ci-val" id="ci-hw">—</span></div>
+    <div style="margin-top:8px;font-size:0.63rem;color:var(--text-dim2)">Click globe for AI explanation ↗</div>
+  </div>
+
+  <!-- Temperature legend -->
+  <div class="hud-panel">
+    <div class="hp-title">Temperature Scale</div>
+    <div class="leg-bar" style="background:linear-gradient(to right,#0a1f5c,#1565c0,#00bcd4,#4caf50,#ffeb3b,#f44336,#b71c1c)"></div>
+    <div class="leg-labels">
+      <span id="leg-min">4°C</span><span>16°C</span><span>24°C</span><span>30°C</span><span id="leg-max">36°C</span>
+    </div>
+  </div>
+
+  <!-- Twin stats -->
+  <div class="hud-panel">
+    <div class="hp-title">Digital Twin Status</div>
+    <div class="stat-row"><span>Depth Layers</span><span class="stat-val" id="stat-depths">15</span></div>
+    <div class="stat-row"><span>ARGO Floats</span><span class="stat-val" id="stat-argo">—</span></div>
+    <div class="stat-row"><span>Satellites</span><span class="stat-val" id="stat-sats">—</span></div>
+    <div class="stat-row"><span>Coral Sites</span><span class="stat-val" id="stat-coral">—</span></div>
+    <div class="stat-row"><span>Marine Objects</span><span class="stat-val" id="stat-marine">—</span></div>
+    <div class="stat-row"><span>Heatwave Zones</span><span class="stat-val" id="stat-hw">—</span></div>
+    <div class="stat-row"><span>FPS</span><span class="stat-val" id="stat-fps">—</span></div>
+  </div>
+
+  <!-- AI Explanation launcher -->
+  <div class="hud-panel">
+    <div class="hp-title">AI Explanation Engine</div>
+    <div style="font-size:0.72rem;color:var(--text-dim2);margin-bottom:8px">Click any ocean cell on the globe to get a real-time SHAP-based AI prediction explanation.</div>
+    <div class="stat-row"><span>Model</span><span class="stat-val">OceanTransformer v3</span></div>
+    <div class="stat-row"><span>Confidence</span><span class="stat-val" id="ai-conf">—</span></div>
+    <div class="stat-row"><span>Last Clicked</span><span class="stat-val" id="ai-last">—</span></div>
+  </div>
+
+  <!-- LOD status -->
+  <div class="hud-panel">
+    <div class="hp-title">Render Quality</div>
+    <div class="mode-grid">
+      <button class="mode-btn" onclick="setLOD('ultra')">Ultra</button>
+      <button class="mode-btn active" onclick="setLOD('high')">High</button>
+      <button class="mode-btn" onclick="setLOD('medium')">Medium</button>
+      <button class="mode-btn" onclick="setLOD('low')">Low</button>
+    </div>
+    <div class="stat-row" style="margin-top:8px"><span>GPU Instancing</span><span class="stat-val" style="color:var(--accent-success)">ON</span></div>
+    <div class="stat-row"><span>Particles</span><span class="stat-val" id="lod-particles">400</span></div>
+  </div>
+
+</div><!-- /right -->
+
+<!-- ══ BOTTOM BAR ════════════════════════════════════════════ -->
+<div class="hud hud-bottom">
+  <div class="hbc"><span class="dot dot-green"></span><span>Digital Twin v4.0</span></div>
+  <div class="hbc"><span class="dot dot-cyan"></span><span id="sb-mode">Mode: Standard</span></div>
+  <div class="hbc"><span class="dot dot-warn"></span><span id="sb-hw">Heatwave: Loading…</span></div>
+  <div class="hbc"><span class="dot dot-cyan"></span><span>Three.js r128</span></div>
+  <div class="hbc"><span>N. Indian Ocean · 15 Depth Layers · GPU Accelerated</span></div>
+  <div class="hbc" style="margin-left:auto"><span id="sb-depth">Depth: 0 m</span></div>
+  <div class="hbc"><span id="sb-coords">—</span></div>
+  <div class="hbc"><span id="sb-year">Year: 2024</span></div>
+</div>
+
+<!-- AI Explanation popup -->
+<div class="ai-popup" id="ai-popup">
+  <div class="ai-popup-title">🤖 AI Prediction Explanation — SHAP Analysis</div>
+  <div class="ai-popup-text" id="ai-text">Loading…</div>
+  <div id="shap-bars"></div>
+  <div style="text-align:right;margin-top:10px">
+    <button onclick="closeAIPopup()" style="background:none;border:1px solid rgba(34,229,255,0.3);color:var(--cyan);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:0.7rem">Close</button>
+  </div>
+</div>
+
+<div id="toast-stack"></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static',filename='js/main.js') }}"></script>
+<script>
+/* ════════════════════════════════════════════════════════════
+   twin.js — Phase 3 Hyper 3D Ocean Digital Twin
+   Three.js engine, all 25 sections
+════════════════════════════════════════════════════════════ */
+"use strict";
+
+// ── Config ───────────────────────────────────────────────────
+const R = 5.0;          // Earth radius (scene units)
+const D_SCALE = 0.0012; // depth metres → scene units
+
+// ── State ────────────────────────────────────────────────────
+const S = {
+  scene:null, camera:null, renderer:null,
+  earth:null, clouds:null, atmosphere:null,
+  groups:{},         // named Three.Group objects
+  particles:{},      // {type: {points, positions, velocities}}
+  depthIdx:0,
+  timelineIdx:9,
+  tlPlaying:false, tlInterval:null,
+  mode:'standard',   // standard|cinema|day|night
+  diveMode:false,
+  autoRotate:true,
+  rotX:0, rotY:0,
+  dragging:false, prevX:0, prevY:0,
+  animId:null,
+  fpsFrames:0, fpsLast:0, fps:0,
+  sceneData:{},
+  hotspots:[],
+  lod:'high',
+};
+
+const DEPTH_M = [0,10,20,30,50,75,100,125,150,200,300,500,700,1000,1500];
+const FLY_SEQ = [
+  {label:"Earth",dist:14,lat:0,lon:0},
+  {label:"Asia",dist:11,lat:30,lon:80},
+  {label:"India",dist:9,lat:20,lon:78},
+  {label:"N. Indian Ocean",dist:8,lat:15,lon:82},
+  {label:"Bay of Bengal",dist:7.5,lat:13,lon:88},
+  {label:"0.25° Grid",dist:6.9,lat:12.5,lon:82.5},
+];
+
+// ── Utilities ─────────────────────────────────────────────────
+function ll2xyz(lat, lon, r=R) {
+  const phi = (90-lat)*Math.PI/180;
+  const theta = (lon+90)*Math.PI/180;
+  return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta));
+}
+function setLoad(t,pct=null) {
+  const el=document.getElementById('twin-load-lbl'); if(el) el.textContent=t;
+  if(pct!==null) { const p=document.getElementById('twin-prog'); if(p) p.style.width=pct+'%'; }
+}
+function hideLoading() { const el=document.getElementById('twin-loading'); if(el){ el.classList.add('hidden'); setTimeout(()=>el.style.display='none',450); } }
+
+// ── Init ──────────────────────────────────────────────────────
+async function initTwin() {
+  setLoad('Building Three.js scene…',5);
+  const canvas = document.getElementById('twin-canvas');
+  S.scene = new THREE.Scene();
+  S.camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
+  S.camera.position.set(0,0,14);
+  S.renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true, preserveDrawingBuffer:true});
+  S.renderer.setSize(innerWidth, innerHeight);
+  S.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+
+  buildLighting();
+  buildEarth();        setLoad('Earth built',15);
+  buildClouds();
+  buildAtmosphere();
+  buildStarfield();    setLoad('Scene built',25);
+
+  initControls();
+  buildCrumbs();
+
+  setLoad('Fetching twin scene…',30);
+  try {
+    const [scene, hw] = await Promise.all([
+      OceanApp.api('/api/twin/scene'),
+      OceanApp.api('/api/heatwave').catch(()=>({hotspots:[],total:0})),
+    ]);
+    S.sceneData = scene;
+    S.hotspots = hw.hotspots||[];
+    document.getElementById('sb-hw').textContent=`Heatwave: ${hw.total||0} zones`;
+    document.getElementById('stat-hw').textContent=hw.total||0;
+  } catch(e){}
+
+  setLoad('Loading depth volume…',40);
+  await loadOceanVolume();
+
+  setLoad('Loading particles…',55);
+  await loadParticles('current');
+  await loadParticles('wind');
+
+  setLoad('Loading ARGO floats…',65);
+  await loadArgoAnimation();
+
+  setLoad('Loading satellites…',72);
+  await loadSatellites();
+
+  setLoad('Loading ocean objects…',78);
+  await loadMarineObjects();
+
+  setLoad('Loading bathymetry…',84);
+  await loadBathymetry();
+
+  setLoad('Loading heatwave + coral…',90);
+  await loadHeatwaveGlow();
+  await loadCoralHotspots();
+
+  setLoad('Loading twin stats…',95);
+  await loadTwinStats();
+
+  setLoad('Ready!',100);
+  setTimeout(hideLoading, 400);
+
+  animate();
+  window.addEventListener('resize', onResize);
+}
+
+// ── Lighting ──────────────────────────────────────────────────
+function buildLighting() {
+  S.scene.add(new THREE.AmbientLight(0x334466, 1.5));
+  const sun = new THREE.DirectionalLight(0xffeedd, 1.3);
+  sun.position.set(8,4,10); S.scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x22e5ff, 0.5);
+  rim.position.set(-8,-2,-6); S.scene.add(rim);
+}
+
+// ── Earth (Section 1) ─────────────────────────────────────────
+function buildEarth() {
+  const geo = new THREE.SphereGeometry(R, 64, 64);
+  const canvas = document.createElement('canvas');
+  canvas.width=1024; canvas.height=512;
+  const ctx = canvas.getContext('2d');
+  // Ocean gradient base
+  const g = ctx.createLinearGradient(0,0,0,512);
+  g.addColorStop(0,'#031525'); g.addColorStop(0.5,'#052f5e'); g.addColorStop(1,'#031525');
+  ctx.fillStyle=g; ctx.fillRect(0,0,1024,512);
+  // Continent blobs
+  ctx.fillStyle='#0b1c2b';
+  [[520,150,90,130],[560,230,60,90],[620,120,140,70],[640,190,50,40],[120,140,100,90],[100,250,70,110],[780,300,90,60],[480,60,160,50]].forEach(([x,y,w,h])=>{
+    ctx.beginPath(); ctx.ellipse(x,y,w/2,h/2,0,0,Math.PI*2); ctx.fill();
+  });
+  // Indian Ocean glow
+  const ng = ctx.createRadialGradient(660,230,5,660,230,100);
+  ng.addColorStop(0,'rgba(34,229,255,0.5)'); ng.addColorStop(1,'rgba(34,229,255,0)');
+  ctx.fillStyle=ng; ctx.beginPath(); ctx.ellipse(660,230,100,80,0,0,Math.PI*2); ctx.fill();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.MeshPhongMaterial({map:tex,emissive:new THREE.Color(0x0a3560),emissiveIntensity:0.4,shininess:20,specular:new THREE.Color(0x1a6090)});
+  S.earth = new THREE.Mesh(geo, mat);
+  S.earth.userData.isEarth = true;
+  S.scene.add(S.earth);
+  // Subtle lat/lon wireframe
+  const wg = new THREE.SphereGeometry(R+0.01,24,16);
+  S.scene.add(new THREE.Mesh(wg, new THREE.MeshBasicMaterial({color:0x22e5ff,wireframe:true,transparent:true,opacity:0.04})));
+}
+
+// ── Clouds (Section 11) ───────────────────────────────────────
+function buildClouds() {
+  const geo = new THREE.SphereGeometry(R+0.07, 48, 48);
+  const c = document.createElement('canvas'); c.width=512; c.height=256;
+  const ctx=c.getContext('2d'); ctx.clearRect(0,0,512,256);
+  ctx.fillStyle='rgba(255,255,255,0.45)';
+  for(let i=0;i<70;i++){const x=Math.random()*512,y=Math.random()*256,r=Math.random()*16+5;ctx.beginPath();ctx.ellipse(x,y,r,r*0.5,0,0,Math.PI*2);ctx.fill();}
+  S.clouds = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0.3,depthWrite:false}));
+  S.scene.add(S.clouds);
+}
+
+// ── Atmosphere shader (Section 1) ─────────────────────────────
+function buildAtmosphere() {
+  const geo = new THREE.SphereGeometry(R+0.38, 48, 48);
+  const mat = new THREE.ShaderMaterial({
+    vertexShader:`varying vec3 vN; void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`varying vec3 vN; void main(){float i=pow(0.64-dot(vN,vec3(0,0,1)),3.);gl_FragColor=vec4(0.13,0.9,1.,1.)*i;}`,
+    blending:THREE.AdditiveBlending, side:THREE.BackSide, transparent:true,
+  });
+  S.atmosphere = new THREE.Mesh(geo, mat);
+  S.scene.add(S.atmosphere);
+}
+
+// ── Starfield ─────────────────────────────────────────────────
+function buildStarfield() {
+  const geo=new THREE.BufferGeometry();
+  const n=3000, pos=new Float32Array(n*3);
+  for(let i=0;i<n;i++){const r=90+Math.random()*120,t=Math.random()*Math.PI*2,p=Math.acos(2*Math.random()-1);pos[i*3]=-r*Math.sin(p)*Math.cos(t);pos[i*3+1]=r*Math.cos(p);pos[i*3+2]=r*Math.sin(p)*Math.sin(t);}
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  S.scene.add(new THREE.Points(geo,new THREE.PointsMaterial({color:0xaaccff,size:0.35,sizeAttenuation:true})));
+}
+
+// ── Ocean Volume (Section 3, 5) ───────────────────────────────
+async function loadOceanVolume() {
+  if(!getLayerOn('volume')) return;
+  try {
+    const data = await OceanApp.api('/api/ocean-volume');
+    const voxels = data.voxels||[];
+    if(!voxels.length) return;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(voxels.length*3);
+    const colors = new Float32Array(voxels.length*3);
+    voxels.forEach((v,i)=>{pos[i*3]=v.x;pos[i*3+1]=v.y;pos[i*3+2]=v.z;colors[i*3]=v.r;colors[i*3+1]=v.g;colors[i*3+2]=v.b;});
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    const mat = new THREE.PointsMaterial({vertexColors:true,size:0.08,sizeAttenuation:true,transparent:true,opacity:0.55,depthWrite:false});
+    const pts = new THREE.Points(geo,mat);
+    removeGroup('volume'); S.groups.volume=pts; S.scene.add(pts);
+  } catch(e){ OceanApp.toast('Volume load failed','error'); }
+}
+
+// ── Thermocline surface (Section 4) ──────────────────────────
+async function loadThermocline() {
+  if(!getLayerOn('thermo')) return;
+  try {
+    const data = await OceanApp.api('/api/thermocline');
+    const pts = data.points||[];
+    if(!pts.length) return;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(pts.length*3);
+    const colors = new Float32Array(pts.length*3);
+    pts.forEach((p,i)=>{pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;colors[i*3]=p.r;colors[i*3+1]=p.g;colors[i*3+2]=p.b;});
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    const mesh = new THREE.Points(geo,new THREE.PointsMaterial({vertexColors:true,size:0.06,transparent:true,opacity:0.7}));
+    removeGroup('thermo'); S.groups.thermo=mesh; S.scene.add(mesh);
+  } catch(e){}
+}
+
+// ── Particles (Sections 8, 9) ─────────────────────────────────
+async function loadParticles(type) {
+  if(!getLayerOn(type==='current'?'current':'wind')) return;
+  try {
+    const data = await OceanApp.api(`/api/particle-data?type=${type}&n=400`);
+    const plist = data.particles||[];
+    if(!plist.length) return;
+    const n = plist.length;
+    const positions = new Float32Array(n*3);
+    const velocities = new Float32Array(n*3);
+    const ages = new Float32Array(n);
+    const maxAges = new Float32Array(n);
+    const geo = new THREE.BufferGeometry();
+    plist.forEach((p,i)=>{positions[i*3]=p.x;positions[i*3+1]=p.y;positions[i*3+2]=p.z;velocities[i*3]=p.vx;velocities[i*3+1]=p.vy;velocities[i*3+2]=p.vz;ages[i]=p.age;maxAges[i]=p.max_age;});
+    geo.setAttribute('position',new THREE.BufferAttribute(positions.slice(),3));
+    const color = type==='current' ? 0x22e5ff : 0x2ee6a8;
+    const mat = new THREE.PointsMaterial({color,size:0.04,transparent:true,opacity:0.8,sizeAttenuation:true});
+    const pts = new THREE.Points(geo,mat);
+    removeGroup(type);
+    S.groups[type]=pts;
+    S.particles[type]={points:pts,positions,velocities,ages,maxAges,plist};
+    S.scene.add(pts);
+  } catch(e){}
+}
+
+// ── ARGO float animation (Section 13) ─────────────────────────
+async function loadArgoAnimation() {
+  if(!getLayerOn('argo')) return;
+  try {
+    const data = await OceanApp.api('/api/argo-animation');
+    const floats = data.floats||[];
+    if(!floats.length) return;
+    const geo = new THREE.SphereGeometry(0.04,8,8);
+    const mat = new THREE.MeshBasicMaterial({color:0x8e44ad});
+    const group = new THREE.Group();
+    floats.forEach(f=>{
+      if(!f.keyframes.length) return;
+      const kf0 = f.keyframes[0];
+      const m = new THREE.Mesh(geo,mat.clone());
+      m.position.set(kf0.x,kf0.y,kf0.z);
+      m.userData.keyframes = f.keyframes;
+      m.userData.t = Math.random();
+      group.add(m);
+    });
+    removeGroup('argo'); S.groups.argo=group; S.scene.add(group);
+    document.getElementById('stat-argo').textContent=floats.length;
+  } catch(e){}
+}
+
+// ── Satellites (Section 14) ───────────────────────────────────
+async function loadSatellites() {
+  if(!getLayerOn('satellites')) return;
+  try {
+    const data = await OceanApp.api('/api/satellite-orbits');
+    const orbits = data.orbits||[];
+    const group = new THREE.Group();
+    orbits.forEach(orb=>{
+      // Draw orbit path
+      const pts = orb.path.map(p=>new THREE.Vector3(p.x,p.y,p.z));
+      const pathGeo = new THREE.BufferGeometry().setFromPoints(pts);
+      const pathMat = new THREE.LineBasicMaterial({color:parseInt(orb.color.replace('#','0x')),transparent:true,opacity:0.25});
+      group.add(new THREE.Line(pathGeo,pathMat));
+      // Satellite marker
+      const satGeo = new THREE.SphereGeometry(0.04,6,6);
+      const satMat = new THREE.MeshBasicMaterial({color:parseInt(orb.color.replace('#','0x'))});
+      const sat = new THREE.Mesh(satGeo,satMat);
+      if(orb.path.length>0){const p0=orb.path[0];sat.position.set(p0.x,p0.y,p0.z);}
+      sat.userData.orbit = orb.path;
+      sat.userData.t = Math.random();
+      group.add(sat);
+    });
+    removeGroup('satellites'); S.groups.satellites=group; S.scene.add(group);
+    document.getElementById('stat-sats').textContent=orbits.length;
+  } catch(e){}
+}
+
+// ── Marine objects (Section 15) ───────────────────────────────
+async function loadMarineObjects() {
+  try {
+    const data = await OceanApp.api('/api/marine-objects');
+    const objects = data.objects||[];
+    const groups = {};
+    objects.forEach(obj=>{
+      const type = obj.type||'buoy';
+      if(!getLayerOn(type==='ship'?'ships':type==='buoy'?'buoys':type==='glider'?'gliders':type)) return;
+      const sizes = {ship:0.09,buoy:0.06,glider:0.05,cable:0.03};
+      const geo = type==='ship'? new THREE.BoxGeometry(0.12,0.04,0.07) : new THREE.SphereGeometry(sizes[type]||0.06,8,8);
+      const col = parseInt((obj.color||'#3498db').replace('#','0x'));
+      const mat = new THREE.MeshPhongMaterial({color:col,emissive:col,emissiveIntensity:0.3});
+      const mesh = new THREE.Mesh(geo,mat);
+      mesh.position.set(obj.x,obj.y,obj.z);
+      if(!groups[type]) groups[type]=new THREE.Group();
+      groups[type].add(mesh);
+    });
+    Object.entries(groups).forEach(([t,g])=>{removeGroup(t);S.groups[t]=g;S.scene.add(g);});
+    document.getElementById('stat-marine').textContent=objects.length;
+  } catch(e){}
+}
+
+// ── Bathymetry terrain (Section 16) ───────────────────────────
+async function loadBathymetry() {
+  if(!getLayerOn('bathymetry')) return;
+  try {
+    const data = await OceanApp.api('/api/bathymetry-terrain?resolution=medium');
+    const pts = data.terrain||[];
+    if(!pts.length) return;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(pts.length*3);
+    const colors = new Float32Array(pts.length*3);
+    pts.forEach((p,i)=>{pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;colors[i*3]=p.r;colors[i*3+1]=p.g;colors[i*3+2]=p.b;});
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    const mesh = new THREE.Points(geo,new THREE.PointsMaterial({vertexColors:true,size:0.07,transparent:true,opacity:0.85}));
+    removeGroup('bathymetry'); S.groups.bathymetry=mesh; S.scene.add(mesh);
+  } catch(e){}
+}
+
+// ── Heatwave glow (Section 17) ────────────────────────────────
+async function loadHeatwaveGlow() {
+  if(!getLayerOn('heatwave')) return;
+  try {
+    const data = await OceanApp.api('/api/heatwave-glow');
+    const pts = data.points||[];
+    if(!pts.length) return;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(pts.length*3);
+    const colors = new Float32Array(pts.length*3);
+    pts.forEach((p,i)=>{pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;colors[i*3]=p.r;colors[i*3+1]=p.g;colors[i*3+2]=p.b;});
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    const mesh = new THREE.Points(geo,new THREE.PointsMaterial({vertexColors:true,size:0.14,transparent:true,opacity:0.75,depthWrite:false}));
+    // Hotspot spheres
+    const hsGroup = new THREE.Group();
+    (data.hotspot_markers||[]).forEach(hs=>{
+      const col = hs.severity==='EXTREME'?0xff0844:hs.severity==='HIGH'?0xff3b5c:0xffb020;
+      const size = hs.severity==='EXTREME'?0.14:0.10;
+      const m = new THREE.Mesh(new THREE.SphereGeometry(size,12,12),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.8}));
+      m.position.set(hs.x,hs.y,hs.z);
+      hsGroup.add(m);
+    });
+    const group = new THREE.Group(); group.add(mesh); group.add(hsGroup);
+    removeGroup('heatwave'); S.groups.heatwave=group; S.scene.add(group);
+  } catch(e){}
+}
+
+// ── Coral hotspots (Section 18) ───────────────────────────────
+async function loadCoralHotspots() {
+  if(!getLayerOn('coral')) return;
+  try {
+    const data = await OceanApp.api('/api/coral-hotspots');
+    const sites = data.sites||[];
+    const group = new THREE.Group();
+    sites.forEach(s=>{
+      const col = Math.round(s.r*255)<<16|Math.round(s.g*255)<<8|Math.round(s.b*255);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,8),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.85}));
+      m.position.set(s.x,s.y,s.z);
+      group.add(m);
+    });
+    removeGroup('coral'); S.groups.coral=group; S.scene.add(group);
+    document.getElementById('stat-coral').textContent=data.site_count||0;
+  } catch(e){}
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+async function loadTwinStats() {
+  try {
+    const d = await OceanApp.api('/api/twin/stats');
+    document.getElementById('stat-sats').textContent=d.satellites||'—';
+    document.getElementById('stat-coral').textContent=d.coral_sites||'—';
+    document.getElementById('stat-marine').textContent=d.marine_objects||'—';
+    document.getElementById('stat-hw').textContent=d.hotspots||0;
+  } catch(e){}
+}
+
+// ── Layer management ──────────────────────────────────────────
+const _layerState = {};
+function getLayerOn(name) { return _layerState[name] !== false; }
+function toggleLayer(name, btn) {
+  const isOn = getLayerOn(name);
+  _layerState[name] = !isOn;
+  if(isOn) { btn.classList.remove('on'); removeGroup(name); }
+  else { btn.classList.add('on'); reloadLayer(name); }
+}
+function removeGroup(name) {
+  if(S.groups[name]) { S.scene.remove(S.groups[name]); delete S.groups[name]; }
+}
+async function reloadLayer(name) {
+  switch(name){
+    case 'volume':    await loadOceanVolume(); break;
+    case 'thermo':    await loadThermocline(); break;
+    case 'current':   await loadParticles('current'); break;
+    case 'wind':      await loadParticles('wind'); break;
+    case 'argo':      await loadArgoAnimation(); break;
+    case 'satellites':await loadSatellites(); break;
+    case 'ships': case 'buoys': case 'gliders': await loadMarineObjects(); break;
+    case 'bathymetry':await loadBathymetry(); break;
+    case 'heatwave':  await loadHeatwaveGlow(); break;
+    case 'coral':     await loadCoralHotspots(); break;
+    case 'clouds':    if(!S.clouds) buildClouds(); else S.scene.add(S.clouds); break;
+  }
+}
+
+// ── Depth slider (Section 6, 7) ───────────────────────────────
+const DEPTH_LABELS = ['0m','10m','20m','30m','50m','75m','100m','125m','150m','200m','300m','500m','700m','1km','1.5km'];
+async function onDepthSlider(val) {
+  S.depthIdx = parseInt(val);
+  const dm = DEPTH_M[S.depthIdx];
+  document.getElementById('depth-val').textContent = dm<1000?dm+'m':(dm/1000)+'km';
+  document.getElementById('sb-depth').textContent = `Depth: ${dm}m`;
+  document.getElementById('ci-depth').textContent = dm+'m';
+  document.getElementById('di-val').textContent = dm+'m';
+  // Fade in dive overlay
+  if(dm>0) { document.getElementById('dive-overlay').classList.add('underwater'); document.getElementById('depth-indicator').classList.add('show'); }
+  else { document.getElementById('dive-overlay').classList.remove('underwater'); document.getElementById('depth-indicator').classList.remove('show'); }
+  // Reload depth layer
+  if(S.depthIdx>0) {
+    try {
+      const data = await OceanApp.api(`/api/depth-layer?depth_idx=${S.depthIdx}`);
+      updateVolumeLayer(data.cells||[], 'depth-layer');
+    } catch(e){}
+  }
+}
+
+function toggleDiveMode() {
+  S.diveMode = !S.diveMode;
+  const btn = document.getElementById('dive-btn');
+  if(S.diveMode) {
+    btn.textContent='🌊 Exit Dive Mode';
+    document.getElementById('depth-slider').value=7;
+    onDepthSlider(7);
+    flyTo(13, 82, 6.5, 1800);
+    OceanApp.toast('Dive mode: descending to 100m','info');
+  } else {
+    btn.textContent='🤿 Enter Dive Mode';
+    document.getElementById('depth-slider').value=0;
+    onDepthSlider(0);
+    OceanApp.toast('Surfaced','success');
+  }
+}
+
+function updateVolumeLayer(cells, key) {
+  removeGroup(key);
+  if(!cells.length) return;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(cells.length*3);
+  const colors = new Float32Array(cells.length*3);
+  cells.forEach((c,i)=>{pos[i*3]=c.x;pos[i*3+1]=c.y;pos[i*3+2]=c.z;colors[i*3]=c.r;colors[i*3+1]=c.g;colors[i*3+2]=c.b;});
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  const mesh = new THREE.Points(geo,new THREE.PointsMaterial({vertexColors:true,size:0.1,transparent:true,opacity:0.7}));
+  S.groups[key]=mesh; S.scene.add(mesh);
+}
+
+// ── Timeline (Section 20) ─────────────────────────────────────
+let _timelineFrames = [];
+async function initTimeline() {
+  try { const d = await OceanApp.api('/api/twin/timeline?n_years=10'); _timelineFrames=d.frames||[]; } catch(e){}
+}
+function onTimeline(val) {
+  S.timelineIdx=parseInt(val);
+  const frame = _timelineFrames[S.timelineIdx] || {year:2015+S.timelineIdx, mean_sst:'—', projected:false};
+  document.getElementById('tl-label').textContent=(frame.projected?'~':'')+frame.year;
+  document.getElementById('sb-year').textContent=`Year: ${frame.year}`;
+  document.getElementById('ci-sst').textContent=frame.mean_sst?frame.mean_sst+'°C':'—';
+  updateCrumbs(S.timelineIdx);
+}
+function jumpTimeline(val) { const sl=document.getElementById('tl-slider'); sl.value=val; onTimeline(val); }
+function toggleTimelinePlay() {
+  const btn=document.getElementById('tl-play');
+  if(S.tlPlaying){ S.tlPlaying=false; clearInterval(S.tlInterval); btn.textContent='▶ Play'; btn.classList.remove('playing'); }
+  else { S.tlPlaying=true; btn.textContent='⏸ Pause'; btn.classList.add('playing');
+    S.tlInterval=setInterval(()=>{ const next=(S.timelineIdx+1)%13; const sl=document.getElementById('tl-slider'); sl.value=next; onTimeline(next); if(next===0){toggleTimelinePlay();} },600); }
+}
+
+// ── Camera fly-through (Section 2) ────────────────────────────
+function buildCrumbs() {
+  const dock = document.getElementById('cam-dock');
+  dock.innerHTML = FLY_SEQ.map((s,i)=>`<button class="cam-btn" id="zc-btn-${i}" onclick="goCrumb(${i})">▶ ${s.label}</button>`).join('');
+}
+function updateCrumbs(activeIdx) {
+  FLY_SEQ.forEach((_,i)=>{ const el=document.getElementById(`zc-btn-${i}`); if(el){ el.classList.toggle('active-step',i===activeIdx); } });
+  for(let i=0;i<6;i++){ const el=document.getElementById(`zc-${i}`); if(el){el.className='zc'+(i===activeIdx?' active':'');} }
+}
+window.goCrumb = function(i) {
+  const step = FLY_SEQ[i];
+  flyTo(step.lat, step.lon, step.dist, 1800);
+  updateCrumbs(i);
+  document.getElementById('sb-mode').textContent=`Viewing: ${step.label}`;
+};
+
+function flyTo(lat, lon, dist, dur=1800, cb=null) {
+  const target = ll2xyz(lat, lon, dist);
+  const start = S.camera.position.clone();
+  const t0 = performance.now();
+  S.autoRotate = false;
+  function step(now) {
+    const t = Math.min(1,(now-t0)/dur);
+    const e = 1-Math.pow(1-t,3);
+    S.camera.position.lerpVectors(start,target,e);
+    S.camera.lookAt(0,0,0);
+    if(t<1) requestAnimationFrame(step);
+    else if(cb) cb();
+  }
+  requestAnimationFrame(step);
+}
+
+// ── Mode (Day/Night/Cinema) (Section 12, 21) ──────────────────
+function setMode(mode) {
+  S.mode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mode-'+mode)?.classList.add('active');
+  document.getElementById('sb-mode').textContent=`Mode: ${mode}`;
+  if(mode==='night') { S.scene.children[0].intensity=0.4; S.clouds.material.opacity=0.15; }
+  else if(mode==='day') { S.scene.children[0].intensity=1.8; S.clouds.material.opacity=0.35; }
+  else if(mode==='cinema') { startCinema(); }
+}
+
+let _cinemaIdx=0, _cinemaTimer=null;
+function startCinema() {
+  if(_cinemaTimer) clearInterval(_cinemaTimer);
+  goCrumb(0);
+  _cinemaTimer=setInterval(()=>{ _cinemaIdx=(_cinemaIdx+1)%FLY_SEQ.length; goCrumb(_cinemaIdx); },4000);
+  OceanApp.toast('Cinema mode started','info');
+}
+
+// ── LOD (Section 23) ─────────────────────────────────────────
+function setLOD(level) {
+  S.lod=level;
+  const particles = {ultra:600,high:400,medium:200,low:100}[level]||400;
+  document.getElementById('lod-particles').textContent=particles;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  OceanApp.toast(`LOD: ${level} (${particles} particles)`,'info');
+}
+
+// ── VR (Section 22) ───────────────────────────────────────────
+async function launchVR() {
+  const data = await OceanApp.api('/api/twin/vr').catch(()=>({}));
+  if(navigator.xr) {
+    try {
+      const session = await navigator.xr.requestSession('immersive-vr');
+      OceanApp.toast('WebXR session started','success');
+    } catch(e) { OceanApp.toast('VR not available on this device','error'); }
+  } else {
+    OceanApp.toast('WebXR not supported (hooks ready for compatible device)','info');
+  }
+}
+
+// ── AI Explanation (Section 19) ───────────────────────────────
+async function fetchExplanation(lat, lon) {
+  try {
+    const data = await OceanApp.api(`/api/twin/explain?lat=${lat}&lon=${lon}`);
+    document.getElementById('ai-text').textContent=data.explanation_text||'—';
+    document.getElementById('ai-conf').textContent=(data.confidence_pct||0).toFixed(0)+'%';
+    document.getElementById('ai-last').textContent=`${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`;
+    // SHAP bars
+    const shap = data.shap_values||{};
+    const total = Object.values(shap).reduce((a,b)=>a+b,0)||1;
+    document.getElementById('shap-bars').innerHTML = Object.entries(shap).map(([k,v])=>`<div class="shap-bar"><span class="shap-name">${k}</span><div class="shap-track"><div class="shap-fill" style="width:${(v/total*100).toFixed(0)}%"></div></div><span class="shap-val">${v.toFixed(3)}</span></div>`).join('');
+    document.getElementById('ai-popup').classList.add('show');
+  } catch(e){}
+}
+function closeAIPopup() { document.getElementById('ai-popup').classList.remove('show'); }
+
+// ── Controls ──────────────────────────────────────────────────
+function initControls() {
+  const canvas = S.renderer.domElement;
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  canvas.addEventListener('mousedown',e=>{S.dragging=true;S.autoRotate=false;S.prevX=e.clientX;S.prevY=e.clientY;});
+  window.addEventListener('mouseup',()=>{S.dragging=false;});
+  window.addEventListener('mousemove',e=>{
+    if(S.dragging){const dx=e.clientX-S.prevX,dy=e.clientY-S.prevY;S.rotY+=dx*0.005;S.rotX=Math.max(-1.3,Math.min(1.3,S.rotX+dy*0.005));S.prevX=e.clientX;S.prevY=e.clientY;}
+    mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1;
+    raycaster.setFromCamera(mouse,S.camera);
+    const hits=raycaster.intersectObject(S.earth);
+    if(hits.length>0){
+      const p=hits[0].point.clone();
+      const phi=Math.acos(Math.max(-1,Math.min(1,p.y/p.length())));
+      const lat=90-phi*180/Math.PI;
+      const lon=Math.atan2(p.z,-p.x)*180/Math.PI-90;
+      const lonN=((lon%360)+360+180)%360-180;
+      document.getElementById('ci-lat').textContent=lat.toFixed(3)+'°N';
+      document.getElementById('ci-lon').textContent=lonN.toFixed(3)+'°E';
+      document.getElementById('sb-coords').textContent=`${lat.toFixed(2)}°N, ${lonN.toFixed(2)}°E`;
+    }
+  });
+  canvas.addEventListener('click',async e=>{
+    mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1;
+    raycaster.setFromCamera(mouse,S.camera);
+    const hits=raycaster.intersectObject(S.earth);
+    if(hits.length>0){
+      const p=hits[0].point;
+      const phi=Math.acos(Math.max(-1,Math.min(1,p.y/p.length())));
+      const lat=90-phi*180/Math.PI;
+      const lon=((Math.atan2(p.z,-p.x)*180/Math.PI-90)%360+360+180)%360-180;
+      fetchExplanation(lat,lon);
+    }
+  });
+  canvas.addEventListener('wheel',e=>{e.preventDefault();const d=S.camera.position.length();S.camera.position.setLength(THREE.MathUtils.clamp(d+e.deltaY*0.01,5.5,40));},{passive:false});
+  // Touch
+  let tDist=null;
+  canvas.addEventListener('touchstart',e=>{if(e.touches.length===1){S.dragging=true;S.autoRotate=false;S.prevX=e.touches[0].clientX;S.prevY=e.touches[0].clientY;}else if(e.touches.length===2){tDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}});
+  canvas.addEventListener('touchmove',e=>{if(e.touches.length===1&&S.dragging){const dx=e.touches[0].clientX-S.prevX,dy=e.touches[0].clientY-S.prevY;S.rotY+=dx*0.005;S.rotX=Math.max(-1.3,Math.min(1.3,S.rotX+dy*0.005));S.prevX=e.touches[0].clientX;S.prevY=e.touches[0].clientY;}else if(e.touches.length===2&&tDist){const nd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);S.camera.position.setLength(THREE.MathUtils.clamp(S.camera.position.length()*(tDist/nd),5.5,40));tDist=nd;}},{passive:true});
+  canvas.addEventListener('touchend',()=>{S.dragging=false;tDist=null;});
+}
+
+// ── Animate ───────────────────────────────────────────────────
+let _lastFrame=0;
+function animate(now=0) {
+  S.animId=requestAnimationFrame(animate);
+  const dt=(now-_lastFrame)/1000; _lastFrame=now;
+  // FPS
+  S.fpsFrames++; if(now-S.fpsLast>1000){S.fps=S.fpsFrames;S.fpsFrames=0;S.fpsLast=now;document.getElementById('stat-fps').textContent=S.fps;}
+  // Auto-rotate
+  if(S.autoRotate) S.rotY+=0.0008;
+  // Earth rotation
+  if(S.earth){S.earth.rotation.y=S.rotY;S.earth.rotation.x=S.rotX;}
+  if(S.clouds){S.clouds.rotation.y=S.rotY*1.1;S.clouds.rotation.x=S.rotX;}
+  // Sync all groups
+  ['volume','thermo','depth-layer','heatwave','coral','bathymetry','current','wind'].forEach(k=>{
+    if(S.groups[k]){S.groups[k].rotation.y=S.rotY;S.groups[k].rotation.x=S.rotX;}
+  });
+  // Particle animation
+  ['current','wind'].forEach(type=>{
+    const p=S.particles[type]; if(!p||!S.groups[type]) return;
+    const pos=p.points.geometry.attributes.position;
+    for(let i=0;i<p.ages.length;i++){
+      p.ages[i]+=1;
+      if(p.ages[i]>p.maxAges[i]){
+        // Reset to start position
+        const pdata=p.plist[i];
+        pos.array[i*3]=pdata.x;pos.array[i*3+1]=pdata.y;pos.array[i*3+2]=pdata.z;
+        p.ages[i]=0;
+      } else {
+        pos.array[i*3]+=p.velocities[i*3]*1.2;
+        pos.array[i*3+1]+=p.velocities[i*3+1]*1.2;
+        pos.array[i*3+2]+=p.velocities[i*3+2]*1.2;
+      }
+    }
+    pos.needsUpdate=true;
+    S.groups[type].rotation.y=S.rotY;S.groups[type].rotation.x=S.rotX;
+  });
+  // ARGO animation
+  if(S.groups.argo){
+    S.groups.argo.children.forEach(m=>{
+      m.userData.t=(m.userData.t+0.0005)%1;
+      const kfs=m.userData.keyframes; if(!kfs||!kfs.length) return;
+      const t=m.userData.t; let k0=kfs[0],k1=kfs[kfs.length-1];
+      for(let i=0;i<kfs.length-1;i++){if(t>=kfs[i].t&&t<kfs[i+1].t){k0=kfs[i];k1=kfs[i+1];break;}}
+      const f=(t-k0.t)/Math.max(0.001,k1.t-k0.t);
+      m.position.lerp(new THREE.Vector3(k1.x,k1.y,k1.z),Math.min(1,f));
+    });
+    S.groups.argo.rotation.y=S.rotY;S.groups.argo.rotation.x=S.rotX;
+  }
+  // Satellite animation
+  if(S.groups.satellites){
+    S.groups.satellites.children.forEach(c=>{
+      if(c.userData.orbit){
+        c.userData.t=(c.userData.t+0.0008)%1;
+        const orbit=c.userData.orbit;
+        const idx=Math.floor(c.userData.t*orbit.length)%orbit.length;
+        const p=orbit[idx]; c.position.set(p.x,p.y,p.z);
+      }
+    });
+  }
+  // Marine objects sync
+  ['ships','buoys','gliders'].forEach(k=>{if(S.groups[k]){S.groups[k].rotation.y=S.rotY;S.groups[k].rotation.x=S.rotX;}});
+  S.renderer.render(S.scene,S.camera);
+}
+
+function onResize(){S.camera.aspect=innerWidth/innerHeight;S.camera.updateProjectionMatrix();S.renderer.setSize(innerWidth,innerHeight);}
+
+// ── Boot ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',async()=>{
+  OceanApp.init?.();
+  await initTwin();
+  await initTimeline();
+  onTimeline(9);
+});
+</script>
+</body>
+</html>
