@@ -629,8 +629,7 @@ This project is licensed under the MIT License - see LICENSE.md for details.
 
 - **Documentation:** See `docs/` folder
 - **Issues:** Open an issue on GitHub
-- **Questions:** Check FAQ in User Guide
-- **Email:** support@oceanverse-ai.com
+- **Email:** arulgnanakumar@gmail.com
 
 ---
 
